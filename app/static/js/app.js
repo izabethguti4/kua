@@ -157,10 +157,11 @@ document.addEventListener('alpine:init', () => {
         selectedAnswerDetail: null,
 
         async init() {
-            await this.checkSystemStatus();
+            await this.checkApiKeyConfigured();
             const authenticated = await this.restoreSession();
             if (authenticated) {
                 this.syncProfileAppearance();
+                await this.checkSystemStatus();
                 await this.loadQuokkaStatus();
                 await this.loadDecks();
                 await this.loadFolders();
@@ -484,6 +485,18 @@ document.addEventListener('alpine:init', () => {
         },
 
         // ==================== SYSTEM & KEY ====================
+
+        async checkApiKeyConfigured() {
+            try {
+                const res = await fetch('/api/check-key', { cache: 'no-store' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                this.hasApiKey = data.has_key === true;
+                this.apiKeyModalOpen = !this.hasApiKey;
+            } catch (e) {
+                console.error('Gemini key check failed:', e);
+            }
+        },
 
         async checkSystemStatus() {
             try {

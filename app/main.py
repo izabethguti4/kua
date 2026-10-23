@@ -86,6 +86,11 @@ def get_system_status():
         "version": "2.1.0"
     }
 
+@app.get("/api/check-key")
+def check_gemini_key():
+    key = (get_api_key() or "").strip()
+    return {"has_key": bool(key)}
+
 @app.post("/api/settings")
 def update_settings(payload: SettingsUpdate):
     key = payload.gemini_api_key.strip()
