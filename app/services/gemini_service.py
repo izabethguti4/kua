@@ -195,6 +195,8 @@ def generate_oral_exam_questions(
     api_key: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """Create a difficulty-adjusted oral exam from deck or folder material."""
+    api_key = api_key or get_api_key()
+    print("GEMINI_API_KEY configurada:", bool(api_key), flush=True)
     # Keep this synchronous Gemini request below Render's proxy timeout.
     client = get_gemini_client(api_key, timeout_ms=20_000)
     if not client:
@@ -221,7 +223,7 @@ Material de estudio:
 """
 
     last_error = None
-    for model_name in ["gemini-1.5-flash"]:
+    for model_name in ["gemini-3.8-flash"]:
         try:
             response = client.models.generate_content(
                 model=model_name,
@@ -248,7 +250,7 @@ Material de estudio:
             raise ValueError(f"Gemini devolvió {len(normalized)} preguntas válidas; se solicitaron {question_count}.")
         except Exception as exc:
             last_error = exc
-            print(f"Model {model_name} folder oral exam warning: {str(exc)[:120]}, trying fallback...")
+            print("Error de Gemini:", exc, flush=True)
 
     raise RuntimeError(f"No se pudo generar el examen oral combinado con Gemini: {last_error}")
 
