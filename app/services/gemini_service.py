@@ -271,7 +271,8 @@ def transcribe_audio_with_gemini(audio_bytes: bytes, mime_type: str = "audio/web
     )
 
     last_error = None
-    for model_name in STT_MODELS:
+    # Use one current, lightweight multimodal model for oral transcription.
+    for model_name in ["gemini-3.1-flash-lite"]:
         try:
             response = client.models.generate_content(
                 model=model_name,
@@ -299,7 +300,7 @@ def evaluate_oral_answer_with_gemini(
     api_key: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Evaluates the student's oral answer using the lightweight Gemini Flash-Lite model.
+    Evaluates the student's oral answer using Gemini 3.1 Flash-Lite.
     """
     client = get_gemini_client(api_key)
     heuristics = analyze_filler_words_heuristics(transcript)
@@ -366,7 +367,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con este formato:
 """
 
     last_error = None
-    for model_name in ["gemini-3.5-flash-lite"]:
+    for model_name in ["gemini-3.1-flash-lite"]:
         try:
             response = client.models.generate_content(
                 model=model_name,
