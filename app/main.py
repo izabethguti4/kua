@@ -1,6 +1,5 @@
 import os
 import json
-import sqlite3
 import shutil
 import secrets
 import re
@@ -12,10 +11,9 @@ from fastapi import BackgroundTasks, FastAPI, UploadFile, File, Form, Header, HT
 from fastapi.responses import FileResponse, Response, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.concurrency import run_in_threadpool
 from dotenv import set_key
 
-from app.database import get_db, init_db, hash_password
+from app.database import get_db, init_db, hash_password, IntegrityError
 from app.models import (
     DeckCreate, DeckPrivacyToggle, FlashcardCreate, FlashcardReview,
     QuizAttemptSubmit, SettingsUpdate, TextDeckGenerateRequest,
@@ -502,7 +500,7 @@ def create_folder(
     except HTTPException:
         conn.close()
         raise
-    except sqlite3.IntegrityError:
+    except IntegrityError:
         conn.close()
         raise HTTPException(status_code=409, detail="Ya existe una carpeta con ese nombre.")
 
@@ -547,7 +545,7 @@ def update_folder(
     except HTTPException:
         conn.close()
         raise
-    except sqlite3.IntegrityError:
+    except IntegrityError:
         conn.close()
         raise HTTPException(status_code=409, detail="Ya existe una carpeta con ese nombre.")
     cursor.execute("""
@@ -916,10 +914,9 @@ def _run_deck_generation_job(
     custom_name: Optional[str], subject: Optional[str], difficulty: str,
     flashcards_count: int, quiz_count: int, oral_count: int,
     is_public: bool, source_filename: str,
-    previous_flashcard_questions: List[str], previous_quiz_questions: List[str],
 ) -> None:
     conn = get_db()
-    conn.execute("UPDATE generation_jobs SET status = 'running', message = 'Completando el mazo...', updated_at = CURRENT_TIMESTAMP WHERE job_id = ?;", (job_id,))
+    conn.execute("UPDATE generation_jobs SET status = 'running', message = 'Generando mazo...', updated_at = CURRENT_TIMESTAMP WHERE job_id = ?;", (job_id,))
     conn.commit()
     conn.close()
     try:
@@ -927,8 +924,6 @@ def _run_deck_generation_job(
             notes_for_model, custom_name=custom_name, subject=subject,
             difficulty=difficulty, flashcards_count=flashcards_count,
             quiz_count=quiz_count, oral_count=oral_count,
-            exclude_flashcard_questions=previous_flashcard_questions,
-            exclude_quiz_questions=previous_quiz_questions,
         )
         conn = get_db()
         cursor = conn.cursor()
@@ -968,8 +963,9 @@ def _run_deck_generation_job(
             pass
         conn = get_db()
         cursor = conn.cursor()
+        cursor.execute("DELETE FROM decks WHERE id = ?;", (deck_id,))
         cursor.execute("""
-            UPDATE generation_jobs SET status = 'failed', message = 'El mazo conserva el contenido inicial; no se pudo completar el resto.', error = ?, updated_at = CURRENT_TIMESTAMP
+            UPDATE generation_jobs SET deck_id = NULL, status = 'failed', message = 'No se pudo generar el mazo.', error = ?, updated_at = CURRENT_TIMESTAMP
             WHERE job_id = ?;
         """, (str(exc)[:1000], job_id))
         conn.commit()
@@ -998,62 +994,12 @@ def _queue_deck_generation(
     """, (job_id, user_id, deck_id))
     conn.commit()
     conn.close()
-    try:
-        initial_flashcards = min(flashcards_count, 5)
-        initial_quizzes = min(quiz_count, 5)
-        initial_content = generate_deck_content_from_notes(
-            notes_for_model, custom_name=custom_name, subject=subject,
-            difficulty=difficulty, flashcards_count=initial_flashcards,
-            quiz_count=initial_quizzes, oral_count=0,
-        )
-
-        conn = get_db()
-        cursor = conn.cursor()
-        now_iso = datetime.now().isoformat()
-        final_name = initial_content.get("name") or custom_name or "Mazo de Estudio Kua"
-        final_subject = initial_content.get("subject") or subject or "General"
-        saved_flashcards = initial_content.get("flashcards", [])[:initial_flashcards]
-        saved_quizzes = initial_content.get("quiz_questions", [])[:initial_quizzes]
-        cursor.execute("UPDATE decks SET name = ?, subject = ?, color = ? WHERE id = ?;", (
-            final_name, final_subject, initial_content.get("color") or "#0083B0", deck_id
-        ))
-        for card in saved_flashcards:
-            cursor.execute("""
-                INSERT INTO flashcards (deck_id, question, answer, easiness_factor, interval_days, repetitions, next_review_at, last_reviewed_at)
-                VALUES (?, ?, ?, 2.5, 0, 0, ?, ?);
-            """, (deck_id, card["question"], card["answer"], now_iso, now_iso))
-        for question in saved_quizzes:
-            cursor.execute("""
-                INSERT INTO quiz_questions (deck_id, question, options_json, correct_index)
-                VALUES (?, ?, ?, ?);
-            """, (deck_id, question["question"], json.dumps(question["options"]), question.get("correct_index", 0)))
-        remaining_flashcards = max(0, flashcards_count - len(saved_flashcards))
-        remaining_quizzes = max(0, quiz_count - len(saved_quizzes))
-        conn.execute("""
-            UPDATE generation_jobs SET status = 'running', message = 'Primeras tarjetas listas; completando el mazo...', updated_at = CURRENT_TIMESTAMP
-            WHERE job_id = ?;
-        """, (job_id,))
-        conn.commit()
-        conn.close()
-    except Exception as exc:
-        conn = get_db()
-        conn.execute("DELETE FROM decks WHERE id = ?;", (deck_id,))
-        conn.execute("DELETE FROM generation_jobs WHERE job_id = ?;", (job_id,))
-        conn.commit()
-        conn.close()
-        raise HTTPException(status_code=502, detail=f"No se pudo generar el contenido inicial: {str(exc)[:300]}")
-
     background_tasks.add_task(
         _run_deck_generation_job, job_id, deck_id, user_id, notes_for_model,
-        custom_name, subject, difficulty, remaining_flashcards, remaining_quizzes,
+        custom_name, subject, difficulty, flashcards_count, quiz_count,
         oral_count, is_public, source_filename,
-        [card.get("question", "") for card in saved_flashcards],
-        [question.get("question", "") for question in saved_quizzes],
     )
-    return {
-        "job_id": job_id, "deck_id": deck_id, "name": final_name,
-        "status": "running", "message": "Primeras tarjetas listas; completando el mazo..."
-    }
+    return {"job_id": job_id, "deck_id": deck_id, "status": "queued", "message": "Generando mazo..."}
 
 @app.get("/api/generation-jobs/{job_id}")
 def get_generation_job(job_id: str, user_id: int = Query(1)):
@@ -1102,9 +1048,8 @@ async def generate_deck_from_file(
         folder_conn.close()
 
     filename = file.filename or "apuntes.pdf"
-    notes_for_model = extracted_text[:4000] if filename.lower().endswith(".pdf") else extracted_text
-    return await run_in_threadpool(
-        _queue_deck_generation,
+    notes_for_model = extracted_text[:3000] if filename.lower().endswith(".pdf") else extracted_text
+    return _queue_deck_generation(
         background_tasks, owner_id, filename, extracted_text, notes_for_model,
         custom_name, subject, difficulty or "Medio",
         max(5, min(flashcards_count or 8, 30)),

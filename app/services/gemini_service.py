@@ -14,7 +14,6 @@ from google.genai import types
 
 # Active models supported by Google Gemini API
 GEN_EVAL_MODELS = ["gemini-3.8-flash", "gemini-flash-latest"]
-DECK_GENERATION_MODELS = ["gemini-1.5-flash", "gemini-3.8-flash", "gemini-flash-latest"]
 STT_MODELS = ["gemini-3.5-transcribe", "gemini-3.8-flash", "gemini-flash-latest"]
 TTS_MODELS = ["gemini-3.8-flash-tts", "gemini-3.8-flash-lite-tts"]
 
@@ -90,12 +89,10 @@ def generate_deck_content_from_notes(
     flashcards_count: int = 6,
     quiz_count: int = 4,
     oral_count: int = 3,
-    exclude_flashcard_questions: Optional[List[str]] = None,
-    exclude_quiz_questions: Optional[List[str]] = None,
     api_key: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Uses gemini-1.5-flash first, with fallbacks, and keeps user-customized question quantity and difficulty:
+    Uses gemini-3.8-flash with user-customized question quantity and difficulty:
     - difficulty: 'Fácil', 'Medio', 'Difícil'
     - flashcards_count: 5 to 30
     - quiz_count: 3 to 15
@@ -120,8 +117,6 @@ PARÁMETROS DE PERSONALIZACIÓN SOLICITADOS:
 - Cantidad de Flashcards: {flashcards_count}
 - Cantidad de Preguntas de Quiz: {quiz_count}
 - Cantidad de Preguntas para Examen Oral: {oral_count}
-- No repitas las preguntas de flashcards ya creadas: {json.dumps(exclude_flashcard_questions or [], ensure_ascii=False)}
-- No repitas las preguntas de quiz ya creadas: {json.dumps(exclude_quiz_questions or [], ensure_ascii=False)}
 
 CONTENIDO A GENERAR:
 1. Un nombre atractivo y profesional para el mazo (si no se indicó uno).
@@ -163,7 +158,7 @@ APUNTES DEL ESTUDIANTE:
 """
 
     last_error = None
-    for model_name in DECK_GENERATION_MODELS:
+    for model_name in GEN_EVAL_MODELS:
         try:
             response = client.models.generate_content(
                 model=model_name,

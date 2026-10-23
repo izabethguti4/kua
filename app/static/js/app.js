@@ -779,7 +779,7 @@ document.addEventListener('alpine:init', () => {
             }
 
             this.isGeneratingDeck = true;
-            this.generationMessage = 'Generando mazo (esto puede tardar unos segundos)...';
+                this.generationMessage = "Analizando apuntes de estudio...";
 
             try {
                 let res;
@@ -803,7 +803,7 @@ document.addEventListener('alpine:init', () => {
                     if (this.newDeckFolderId) formData.append('folder_id', this.newDeckFolderId);
                     formData.append('user_id', this.currentUser.id || 1);
 
-                    this.generationMessage = 'Generando mazo (esto puede tardar unos segundos)...';
+                    this.generationMessage = 'Generando mazo...';
                     res = await fetch('/api/decks/generate-from-file', {
                         method: 'POST',
                         body: formData
@@ -815,7 +815,7 @@ document.addEventListener('alpine:init', () => {
                         return;
                     }
 
-                    this.generationMessage = 'Generando mazo (esto puede tardar unos segundos)...';
+                    this.generationMessage = 'Generando mazo...';
                     res = await fetch(`/api/decks/generate-from-text?user_id=${this.currentUser.id || 1}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -835,6 +835,8 @@ document.addEventListener('alpine:init', () => {
 
                 if (res.ok) {
                     const result = await res.json();
+                    this.generationMessage = 'Generando mazo...';
+                    const completed = await this.pollGenerationJob(result.job_id, 'deck');
                     this.uploadModalOpen = false;
                     this.uploadFileName = '';
                     this.uploadText = '';
@@ -842,14 +844,7 @@ document.addEventListener('alpine:init', () => {
                     this.newDeckFolderId = '';
                     await this.loadDecks();
                     this.setTab('library');
-                    this.showToast(`✨ "${result.name}" ya tiene sus primeras tarjetas; completando el mazo en segundo plano.`);
-                    this.pollGenerationJob(result.job_id, 'deck').then(async (completed) => {
-                        await this.loadDecks();
-                        this.showToast(`✅ Mazo "${completed.name}" listo.`);
-                    }).catch(async (error) => {
-                        await this.loadDecks();
-                        this.showToast(`⚠️ El mazo conserva sus primeras tarjetas, pero no se pudo completar: ${error.message}`);
-                    });
+                    this.showToast(`✨ Mazo "${completed.name}" creado con éxito.`);
                 } else {
                     const err = await res.json();
                     alert("Aviso: " + (err.detail || 'Ocurrió un problema generando el mazo'));

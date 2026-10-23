@@ -1,15 +1,144 @@
-import sqlite3
 import os
 import json
 import hashlib
+import re
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "kua.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+USE_POSTGRES = bool(DATABASE_URL)
+
+if USE_POSTGRES:
+    import psycopg2
+    from psycopg2 import IntegrityError
+    from psycopg2.extras import DictCursor
+else:
+    import sqlite3
+    IntegrityError = sqlite3.IntegrityError
+
+
+def _postgres_placeholders(sql: str) -> str:
+    """Translate SQLite qmark parameters while leaving quoted question marks alone."""
+    result = []
+    quote = None
+    index = 0
+    while index < len(sql):
+        char = sql[index]
+        if quote:
+            result.append(char)
+            if char == quote:
+                if index + 1 < len(sql) and sql[index + 1] == quote:
+                    result.append(sql[index + 1])
+                    index += 1
+                else:
+                    quote = None
+        elif char in ("'", '"'):
+            quote = char
+            result.append(char)
+        elif char == "?":
+            result.append("%s")
+        else:
+            result.append(char)
+        index += 1
+    return "".join(result)
+
+
+class DatabaseCursor:
+    """Small DB-API compatibility wrapper for existing SQLite-style queries."""
+    _serial_tables = {
+        "users", "folders", "decks", "flashcards", "quiz_questions",
+        "oral_questions", "oral_sessions", "oral_answers", "quiz_attempts",
+        "forum_posts", "forum_comments", "forum_likes",
+    }
+
+    def __init__(self, connection):
+        self.connection = connection
+        self.raw = connection.raw.cursor(cursor_factory=DictCursor) if connection.is_postgres else connection.raw.cursor()
+        self._lastrowid = None
+
+    def execute(self, sql, params=()):
+        self._lastrowid = None
+        if self.connection.is_postgres:
+            stripped = sql.strip()
+            if re.match(r"PRAGMA\s+foreign_keys", stripped, re.I):
+                return self
+            table_info = re.match(r"PRAGMA\s+table_info\((\w+)\)", stripped, re.I)
+            if table_info:
+                self.raw.execute(
+                    "SELECT column_name AS name FROM information_schema.columns "
+                    "WHERE table_schema = current_schema() AND table_name = %s ORDER BY ordinal_position;",
+                    (table_info.group(1),),
+                )
+                return self
+
+            sql = re.sub(r"INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT", "SERIAL PRIMARY KEY", sql, flags=re.I)
+            sql = re.sub(r"datetime\(\s*'now'\s*\)", "CURRENT_TIMESTAMP", sql, flags=re.I)
+            sql = _postgres_placeholders(sql)
+
+            insert = re.match(r"\s*INSERT\s+INTO\s+(\w+)", sql, re.I)
+            if insert and insert.group(1).lower() in self._serial_tables and not re.search(r"\bRETURNING\b", sql, re.I):
+                sql = sql.rstrip().rstrip(";") + " RETURNING id"
+                self.raw.execute(sql, params or ())
+                row = self.raw.fetchone()
+                self._lastrowid = row[0] if row else None
+                return self
+
+        self.raw.execute(sql, params or ())
+        if not self.connection.is_postgres:
+            self._lastrowid = self.raw.lastrowid
+        return self
+
+    @property
+    def lastrowid(self):
+        return self._lastrowid
+
+    @property
+    def rowcount(self):
+        return self.raw.rowcount
+
+    def fetchone(self):
+        return self.raw.fetchone()
+
+    def fetchall(self):
+        return self.raw.fetchall()
+
+    def close(self):
+        self.raw.close()
+
+
+class DatabaseConnection:
+    def __init__(self, raw, is_postgres):
+        self.raw = raw
+        self.is_postgres = is_postgres
+
+    def cursor(self):
+        return DatabaseCursor(self)
+
+    def execute(self, sql, params=()):
+        return self.cursor().execute(sql, params)
+
+    def commit(self):
+        self.raw.commit()
+
+    def rollback(self):
+        self.raw.rollback()
+
+    def close(self):
+        self.raw.close()
 
 def get_db():
+    if USE_POSTGRES:
+        database_url = DATABASE_URL
+        if database_url.startswith("postgres://"):
+            database_url = "postgresql://" + database_url[len("postgres://"):]
+        database_url = database_url.replace("postgresql+psycopg2://", "postgresql://", 1)
+        return DatabaseConnection(psycopg2.connect(database_url), True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
-    return conn
+    return DatabaseConnection(conn, False)
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode('utf-8')).hexdigest()
@@ -302,6 +431,27 @@ def init_db():
     conn.close()
     
     seed_initial_data()
+    if USE_POSTGRES:
+        _synchronize_postgres_sequences()
+
+
+def _synchronize_postgres_sequences():
+    # Seed data assigns fixed IDs, so advance each serial sequence before user inserts.
+    serial_tables = (
+        "users", "folders", "decks", "flashcards", "quiz_questions",
+        "oral_questions", "oral_sessions", "oral_answers", "quiz_attempts",
+        "forum_posts", "forum_comments", "forum_likes",
+    )
+    conn = get_db()
+    cursor = conn.cursor()
+    for table in serial_tables:
+        cursor.execute(
+            f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), "
+            f"GREATEST(COALESCE((SELECT MAX(id) FROM {table}), 1), 1), "
+            f"EXISTS (SELECT 1 FROM {table}));"
+        )
+    conn.commit()
+    conn.close()
 
 def seed_initial_data():
     conn = get_db()
