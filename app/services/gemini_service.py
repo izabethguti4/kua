@@ -220,7 +220,7 @@ Material de estudio:
 """
 
     last_error = None
-    for model_name in GEN_EVAL_MODELS:
+    for model_name in ["gemini-1.5-flash"]:
         try:
             response = client.models.generate_content(
                 model=model_name,

@@ -31,6 +31,7 @@ from app.services.gemini_service import (
 )
 
 app = FastAPI(title="Kua API", description="AI Study, Active Recall & Oral Examination Platform with Quokka Mascot")
+oral_exam_jobs = {}
 
 # CORS middleware
 app.add_middleware(
@@ -591,7 +592,7 @@ def move_deck_to_folder(
     return {"deck_id": deck_id, "folder_id": payload.folder_id, "message": "Mazo movido correctamente."}
 
 @app.post("/api/folders/{folder_id}/oral-exam")
-def create_folder_oral_exam(folder_id: int, payload: OralExamRequest, user_id: int = Query(1)):
+def create_folder_oral_exam(folder_id: int, payload: OralExamRequest, background_tasks: BackgroundTasks, user_id: int = Query(1)):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT id, name FROM folders WHERE id = ? AND user_id = ?;", (folder_id, user_id))
@@ -625,13 +626,13 @@ def create_folder_oral_exam(folder_id: int, payload: OralExamRequest, user_id: i
                 )
             source_parts.append("PREGUNTAS ORALES EXISTENTES:\n" + "\n".join(formatted_questions))
 
-    source_material = "\n\n".join(source_parts)
-    question_count = payload.question_count
+    source_material = "\n\n".join(source_parts)[:3000]
     conn.close()
 
     try:
+        initial_count = min(3, payload.question_count)
         oral_questions = generate_oral_exam_questions(
-            folder["name"], source_material, question_count=question_count,
+            folder["name"], source_material, question_count=initial_count,
             difficulty=payload.difficulty
         )
     except Exception as exc:
@@ -646,26 +647,28 @@ def create_folder_oral_exam(folder_id: int, payload: OralExamRequest, user_id: i
     """, (user_id, exam_name, f"folder_exam_{folder_id}", source_material, folder["name"], payload.difficulty))
     exam_deck_id = cursor.lastrowid
 
-    for question in oral_questions:
-        cursor.execute("""
-            INSERT INTO oral_questions (deck_id, question_text, concept, key_points_json)
-            VALUES (?, ?, ?, ?);
-        """, (
-            exam_deck_id,
-            question["question_text"],
-            question.get("concept", ""),
-            json.dumps(question.get("key_points", [])),
-        ))
+    _insert_oral_questions(cursor, exam_deck_id, oral_questions)
 
     conn.commit()
     conn.close()
+    job_id = None
+    if payload.question_count > initial_count:
+        job_id = uuid.uuid4().hex
+        oral_exam_jobs[job_id] = {"user_id": user_id, "status": "generating", "questions": [], "error": None}
+        background_tasks.add_task(
+            _generate_remaining_oral_questions, job_id, exam_deck_id, folder["name"],
+            source_material, [q["question_text"] for q in oral_questions],
+            payload.question_count - initial_count, payload.difficulty
+        )
     return {
         "deck": {"id": exam_deck_id, "name": exam_name, "folder_id": folder_id},
-        "question_count": len(oral_questions),
+        "question_count": payload.question_count if job_id else len(oral_questions),
+        "initial_question_count": len(oral_questions),
+        "job_id": job_id,
     }
 
 @app.post("/api/decks/{deck_id}/oral-exam")
-def create_deck_oral_exam(deck_id: int, payload: OralExamRequest, user_id: int = Query(1)):
+def create_deck_oral_exam(deck_id: int, payload: OralExamRequest, background_tasks: BackgroundTasks, user_id: int = Query(1)):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT id, name, subject, notes_text FROM decks WHERE id = ? AND user_id = ?;", (deck_id, user_id))
@@ -683,14 +686,15 @@ def create_deck_oral_exam(deck_id: int, payload: OralExamRequest, user_id: int =
             f"- {q['question_text']} | Concepto: {q['concept'] or ''} | Puntos clave: {', '.join(json.loads(q['key_points_json']) if q['key_points_json'] else [])}"
             for q in existing_questions
         ))
-    source_material = "\n\n".join(source_parts)
+    source_material = "\n\n".join(source_parts)[:3000]
     if not deck["notes_text"] and not existing_questions:
         raise HTTPException(status_code=400, detail="Este mazo no contiene material para generar un examen oral.")
 
     try:
+        initial_count = min(3, payload.question_count)
         oral_questions = generate_oral_exam_questions(
             deck["name"], source_material,
-            question_count=payload.question_count,
+            question_count=initial_count,
             difficulty=payload.difficulty,
         )
     except Exception as exc:
@@ -704,14 +708,65 @@ def create_deck_oral_exam(deck_id: int, payload: OralExamRequest, user_id: int =
         VALUES (?, ?, ?, ?, ?, ?, 0, '#0083B0', 1);
     """, (user_id, exam_name, f"deck_exam_{deck_id}", source_material, deck["subject"], payload.difficulty))
     exam_deck_id = cursor.lastrowid
-    for question in oral_questions:
+    _insert_oral_questions(cursor, exam_deck_id, oral_questions)
+    conn.commit()
+    conn.close()
+    job_id = None
+    if payload.question_count > initial_count:
+        job_id = uuid.uuid4().hex
+        oral_exam_jobs[job_id] = {"user_id": user_id, "status": "generating", "questions": [], "error": None}
+        background_tasks.add_task(
+            _generate_remaining_oral_questions, job_id, exam_deck_id, deck["name"],
+            source_material, [q["question_text"] for q in oral_questions],
+            payload.question_count - initial_count, payload.difficulty
+        )
+    return {
+        "deck": {"id": exam_deck_id, "name": exam_name},
+        "question_count": payload.question_count if job_id else len(oral_questions),
+        "initial_question_count": len(oral_questions),
+        "job_id": job_id,
+    }
+
+
+def _insert_oral_questions(cursor, deck_id: int, questions: list) -> None:
+    for question in questions:
         cursor.execute("""
             INSERT INTO oral_questions (deck_id, question_text, concept, key_points_json)
             VALUES (?, ?, ?, ?);
-        """, (exam_deck_id, question["question_text"], question.get("concept", ""), json.dumps(question.get("key_points", []))))
-    conn.commit()
-    conn.close()
-    return {"deck": {"id": exam_deck_id, "name": exam_name}, "question_count": len(oral_questions)}
+        """, (deck_id, question["question_text"], question.get("concept", ""), json.dumps(question.get("key_points", []))))
+        question["id"] = cursor.lastrowid
+
+
+def _generate_remaining_oral_questions(
+    job_id: str, exam_deck_id: int, exam_title: str, source_material: str,
+    existing_questions: list, question_count: int, difficulty: str
+) -> None:
+    try:
+        material_with_references = (
+            source_material[:3000]
+            + "\n\nPREGUNTAS YA GENERADAS (evita repetirlas):\n"
+            + "\n".join(f"- {question}" for question in existing_questions)
+        )
+        remaining = generate_oral_exam_questions(
+            exam_title, material_with_references,
+            question_count=question_count, difficulty=difficulty
+        )
+        conn = get_db()
+        cursor = conn.cursor()
+        _insert_oral_questions(cursor, exam_deck_id, remaining)
+        conn.commit()
+        conn.close()
+        oral_exam_jobs[job_id].update({"status": "complete", "questions": remaining})
+    except Exception as exc:
+        oral_exam_jobs[job_id].update({"status": "failed", "error": str(exc)})
+
+
+@app.get("/api/oral/exam-jobs/{job_id}")
+def get_oral_exam_job(job_id: str, user_id: int = Query(1)):
+    job = oral_exam_jobs.get(job_id)
+    if not job or job["user_id"] != user_id:
+        raise HTTPException(status_code=404, detail="Generación de examen no encontrada.")
+    return {"status": job["status"], "questions": job["questions"], "error": job["error"]}
 
 @app.get("/api/decks")
 def list_decks(user_id: Optional[int] = None):

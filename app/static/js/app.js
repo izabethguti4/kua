@@ -84,6 +84,9 @@ document.addEventListener('alpine:init', () => {
         oralExamTargetFolder: null,
         oralQuestionCount: 6,
         oralDifficulty: 'Medio',
+        isGeneratingRemainingOralQuestions: false,
+        oralExamGenerationError: '',
+        oralExamJobId: null,
         selectedDeck: null,
         searchQuery: '',
         isLoadingDecks: false,
@@ -706,8 +709,10 @@ document.addEventListener('alpine:init', () => {
                     return;
                 }
                 this.oralExamConfigOpen = false;
-                this.showToast(`🎙️ Examen listo: ${data.question_count} preguntas (${this.oralDifficulty}).`);
-                await this.runOralExam(data.deck);
+                this.showToast(data.job_id
+                    ? `🎙️ Las primeras preguntas están listas; estoy cargando las demás (${this.oralDifficulty}).`
+                    : `🎙️ Examen listo: ${data.question_count} preguntas (${this.oralDifficulty}).`);
+                await this.runOralExam(data.deck, data.job_id || null);
             } catch (e) {
                 this.showToast('❌ Error generando el examen: ' + e.message);
             } finally {
@@ -1027,7 +1032,7 @@ document.addEventListener('alpine:init', () => {
             this.oralExamConfigOpen = true;
         },
 
-        async runOralExam(deck) {
+        async runOralExam(deck, jobId = null) {
             this.oralDeck = deck;
             this.currentOralIndex = 0;
             this.evaluationResult = null;
@@ -1036,6 +1041,9 @@ document.addEventListener('alpine:init', () => {
             this.isRecording = false;
             this.isEvaluating = false;
             this.isCountingDown = false;
+            this.oralExamJobId = jobId;
+            this.isGeneratingRemainingOralQuestions = Boolean(jobId);
+            this.oralExamGenerationError = '';
 
             try {
                 const res = await fetch(`/api/oral/sessions/start?user_id=${this.currentUser.id || 1}`, {
@@ -1052,11 +1060,41 @@ document.addEventListener('alpine:init', () => {
                     return;
                 }
                 this.setTab('oral');
+                if (jobId) this.pollOralExamJob(jobId);
 
                 // Iniciar automáticamente la cuenta regresiva visual y activar micrófono
                 this.triggerOralCountdown();
             } catch (e) {
                 alert("Error iniciando examen oral: " + e.message);
+            }
+        },
+
+        async pollOralExamJob(jobId) {
+            while (this.oralExamJobId === jobId) {
+                try {
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    const res = await fetch(`/api/oral/exam-jobs/${jobId}?user_id=${this.currentUser.id || 1}`);
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.detail || 'No se pudo consultar la generación.');
+                    if (data.status === 'complete') {
+                        const existingQuestionTexts = new Set(this.oralQuestions.map(question => question.question_text));
+                        this.oralQuestions = [...this.oralQuestions, ...(data.questions || []).filter(question => !existingQuestionTexts.has(question.question_text))];
+                        this.isGeneratingRemainingOralQuestions = false;
+                        this.oralExamJobId = null;
+                        return;
+                    }
+                    if (data.status === 'failed') {
+                        this.oralExamGenerationError = data.error || 'No se pudieron cargar las preguntas restantes.';
+                        this.isGeneratingRemainingOralQuestions = false;
+                        this.oralExamJobId = null;
+                        return;
+                    }
+                } catch (error) {
+                    this.oralExamGenerationError = error.message;
+                    this.isGeneratingRemainingOralQuestions = false;
+                    this.oralExamJobId = null;
+                    return;
+                }
             }
         },
 

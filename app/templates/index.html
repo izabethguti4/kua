@@ -88,7 +88,7 @@
                     <h1 class="text-2xl font-black tracking-tight bg-gradient-to-r from-[#0083B0] to-[#00B4DB] bg-clip-text text-transparent">Kua</h1>
                     <span class="text-[10px] font-bold uppercase tracking-wider bg-sky-100 text-[#0083B0] px-2 py-0.5 rounded-full">v2.1</span>
                 </div>
-                <p class="text-[11px] text-slate-500 font-medium">Estudio Inteligente & Quokka IA</p>
+                <p class="text-[11px] text-slate-500 font-medium">Tu compañero de estudio inteligente</p>
             </div>
         </div>
 
@@ -244,7 +244,6 @@
                         </div>
                         <div class="flex items-center space-x-2">
                             <h3 class="font-bold text-slate-800 text-lg">Examen Oral con IA</h3>
-                            <span class="text-[10px] font-bold uppercase bg-[#0083B0]/10 text-[#0083B0] px-2 py-0.5 rounded-full">Diferenciador</span>
                         </div>
                         <p class="text-xs text-slate-500 leading-relaxed">
                             Cuenta regresiva (3, 2, 1) y micrófono automático. Transcripción con captura de muletillas y evaluación contra tus notas.
@@ -262,8 +261,19 @@
         <div x-show="currentTab === 'library'" x-cloak class="space-y-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Tu Biblioteca de Mazos</h2>
-                    <p class="text-sm text-slate-500">Administra tus notas, ajusta la privacidad y comparte con el Foro.</p>
+                    <template x-if="!selectedFolder">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Tu Biblioteca de Mazos</h2>
+                            <p class="text-sm text-slate-500">Administra tus carpetas, notas y mazos.</p>
+                        </div>
+                    </template>
+                    <template x-if="selectedFolder">
+                        <div>
+                            <button @click="selectedFolder = null" class="text-xs font-bold text-[#0083B0] hover:text-[#007096] mb-1">← Todas las carpetas</button>
+                            <h2 class="text-2xl font-bold text-slate-800 tracking-tight" x-text="selectedFolder.name"></h2>
+                            <p class="text-sm text-slate-500">Mazos de esta carpeta.</p>
+                        </div>
+                    </template>
                 </div>
 
                 <div class="flex items-center space-x-3">
@@ -276,11 +286,37 @@
                             class="bg-[#0083B0] hover:bg-[#007096] text-white font-semibold px-4 py-2 rounded-xl text-xs whitespace-nowrap shadow-sm">
                         + Nuevo
                     </button>
+                    <button x-show="!selectedFolder" @click="openFolderEditor()"
+                            class="bg-white hover:bg-sky-50 text-[#0083B0] border border-[#0083B0]/30 font-bold px-4 py-2 rounded-xl text-xs whitespace-nowrap shadow-sm">
+                        + Crear Carpeta
+                    </button>
+                    <button x-show="selectedFolder" @click="startFolderOralExam(selectedFolder)"
+                            class="bg-[#0083B0] hover:bg-[#007096] text-white font-bold px-4 py-2 rounded-xl text-xs whitespace-nowrap shadow-sm">
+                        Examen Oral de la Carpeta
+                    </button>
                 </div>
             </div>
 
+            <div x-show="!selectedFolder && folders.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <template x-for="folder in folders" :key="folder.id">
+                    <button @click="openFolder(folder)" class="relative min-h-32 overflow-hidden rounded-3xl p-5 text-left text-white shadow-sm hover:shadow-md transition-all" :style="`background-color: ${folder.color || '#0083B0'}`">
+                        <template x-if="folder.image_path"><img :src="folder.image_path" alt="" class="absolute inset-0 w-full h-full object-cover opacity-30"></template>
+                        <div class="relative flex items-start justify-between gap-3">
+                            <div>
+                                <i data-lucide="folder" class="w-6 h-6 mb-3"></i>
+                                <h3 class="font-bold text-lg" x-text="folder.name"></h3>
+                                <p class="text-xs text-white/80" x-text="`${folder.deck_count || 0} mazos`"></p>
+                            </div>
+                            <span class="flex gap-2">
+                                <span @click.stop="openFolderEditor(folder)" class="rounded-full bg-white/20 p-2 hover:bg-white/30" title="Editar carpeta"><i data-lucide="pencil" class="w-4 h-4"></i></span>
+                            </span>
+                        </div>
+                    </button>
+                </template>
+            </div>
+
             <!-- Decks Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div x-show="!selectedFolder || filteredDecks().length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 <template x-for="deck in filteredDecks()" :key="deck.id">
                     <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
                         <div class="space-y-3">
@@ -298,11 +334,17 @@
                                 </button>
                             </div>
 
-                            <div class="flex items-start justify-between">
+                            <div class="flex items-start justify-between gap-2">
                                 <h3 class="font-bold text-slate-800 text-base leading-snug" x-text="deck.name"></h3>
-                                <button @click="deleteDeck(deck.id, $event)" class="text-slate-300 hover:text-red-500 p-1" title="Eliminar mazo">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
+                                <div class="flex items-center gap-1 shrink-0">
+                                    <select :value="deck.folder_id || ''" @change="moveDeckToFolder(deck, $event.target.value)" class="max-w-28 text-[10px] rounded-lg border border-slate-200 bg-white px-1.5 py-1" title="Mover a carpeta">
+                                        <option value="">Sin carpeta</option>
+                                        <template x-for="folder in folders" :key="folder.id"><option :value="folder.id" x-text="folder.name"></option></template>
+                                    </select>
+                                    <button @click="deleteDeck(deck.id, $event)" class="text-slate-300 hover:text-red-500 p-1" title="Eliminar mazo">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- Difficulty & Clone indicator -->
@@ -355,6 +397,7 @@
                     </div>
                 </template>
             </div>
+            <div x-show="selectedFolder && filteredDecks().length === 0" class="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">Esta carpeta todavía no tiene mazos.</div>
         </div>
 
         <!-- ==================== 3. ESTUDIO (FLASHCARDS SM-2) ==================== -->
@@ -524,6 +567,12 @@
                 </div>
                 <div class="text-xs font-bold text-slate-500" x-text="oralQuestions.length ? `Pregunta ${currentOralIndex + 1} de ${oralQuestions.length}` : ''"></div>
             </div>
+
+            <div x-show="isGeneratingRemainingOralQuestions" class="max-w-2xl mx-auto flex items-center justify-center gap-3 rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm font-semibold text-[#0083B0]">
+                <span class="h-4 w-4 animate-spin rounded-full border-2 border-sky-200 border-t-[#0083B0]"></span>
+                <span>Cargando las demás preguntas...</span>
+            </div>
+            <div x-show="oralExamGenerationError" class="max-w-2xl mx-auto rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800" x-text="oralExamGenerationError"></div>
 
             <div x-show="oralQuestions.length > 0 && !oralSessionCompleted" class="max-w-2xl mx-auto space-y-6">
                 <!-- PREGUNTA ORAL -->
@@ -699,8 +748,9 @@
                     <!-- Next button -->
                     <div class="pt-2">
                         <button @click="nextOralQuestion()" 
+                                :disabled="isGeneratingRemainingOralQuestions && currentOralIndex === oralQuestions.length - 1"
                                 class="w-full py-4 bg-[#0083B0] hover:bg-[#007096] text-white font-bold rounded-2xl transition-all shadow-md flex items-center justify-center space-x-2 text-sm">
-                            <span x-text="currentOralIndex + 1 < oralQuestions.length ? 'Siguiente Pregunta Oral (Con Conteo)' : 'Finalizar Examen y Recoger Frutas 🍓'"></span>
+                            <span x-text="isGeneratingRemainingOralQuestions && currentOralIndex === oralQuestions.length - 1 ? 'Cargando preguntas...' : (currentOralIndex + 1 < oralQuestions.length ? 'Siguiente Pregunta Oral (Con Conteo)' : 'Finalizar Examen y Recoger Frutas 🍓')"></span>
                             <i data-lucide="arrow-right" class="w-4 h-4"></i>
                         </button>
                     </div>
@@ -1070,7 +1120,7 @@
                     <img :src="profileAvatarUrl" alt="Foto de perfil" class="w-full h-full object-cover">
                 </template>
                 <template x-if="!profileAvatarUrl">
-                    <span x-text="(profileForm.display_name || 'U')[0].toUpperCase()"></span>
+                    <span x-text="(currentUser.display_name || 'U')[0].toUpperCase()"></span>
                 </template>
 
                 <label title="Cambiar foto de perfil" class="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white text-[11px] font-bold space-y-1">
@@ -1082,8 +1132,8 @@
 
             <!-- Nombre y Universidad -->
             <div class="space-y-1 mb-1">
-                <h3 class="font-bold text-slate-800 text-xl sm:text-2xl leading-tight" x-text="profileForm.display_name || 'Nombre del estudiante'"></h3>
-                <p class="text-xs sm:text-sm text-slate-500 font-medium" x-text="profileForm.university || 'Universidad no configurada'"></p>
+                <h3 class="font-bold text-slate-800 text-xl sm:text-2xl leading-tight" x-text="currentUser.display_name || 'Nombre del estudiante'"></h3>
+                <p class="text-xs sm:text-sm text-slate-500 font-medium" x-text="currentUser.university || 'Universidad no configurada'"></p>
             </div>
 
         </div>
@@ -1325,6 +1375,14 @@
                 </label>
             </div>
 
+            <label class="block space-y-1">
+                <span class="text-xs font-bold text-slate-700">Carpeta</span>
+                <select x-model="newDeckFolderId" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs">
+                    <option value="">Sin carpeta</option>
+                    <template x-for="folder in folders" :key="folder.id"><option :value="folder.id" x-text="folder.name"></option></template>
+                </select>
+            </label>
+
             <div x-show="uploadMode === 'file'" class="space-y-2">
                 <div class="border-2 border-dashed border-slate-200 hover:border-[#0083B0] rounded-2xl p-5 text-center cursor-pointer bg-slate-50/50"
                      @click="document.getElementById('deckFileInput').click()">
@@ -1437,6 +1495,48 @@
                     <span>Publicar en Foro</span>
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: CONFIGURAR EXAMEN ORAL ==================== -->
+    <div x-show="oralExamConfigOpen" x-cloak style="display: none;" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click.self="oralExamConfigOpen = false">
+        <div class="w-full max-w-md space-y-5 rounded-3xl border border-slate-100 bg-white p-6 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-xl font-bold text-slate-800">Configurar Examen Oral</h3>
+                    <p class="text-xs text-slate-500" x-text="oralExamTargetFolder ? `Carpeta: ${oralExamTargetFolder.name}` : `Mazo: ${oralExamTargetDeck?.name || ''}`"></p>
+                </div>
+                <button @click="oralExamConfigOpen = false" class="rounded-xl p-2 text-slate-400 hover:bg-slate-100"><i data-lucide="x" class="h-5 w-5"></i></button>
+            </div>
+            <label class="block space-y-2">
+                <span class="text-xs font-bold uppercase tracking-wide text-slate-600">Cantidad de preguntas: <span x-text="oralQuestionCount"></span></span>
+                <input type="range" min="3" max="15" step="1" x-model.number="oralQuestionCount" class="w-full accent-[#0083B0]">
+                <span class="flex justify-between text-[10px] text-slate-400"><span>3</span><span>15</span></span>
+            </label>
+            <label class="block space-y-2">
+                <span class="text-xs font-bold uppercase tracking-wide text-slate-600">Dificultad</span>
+                <select x-model="oralDifficulty" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700">
+                    <option value="Fácil">Fácil</option><option value="Medio">Medio</option><option value="Difícil">Difícil</option>
+                </select>
+            </label>
+            <button @click="confirmOralExam()" :disabled="isGeneratingFolderOralExam" class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0083B0] py-3 text-sm font-bold text-white hover:bg-[#007096] disabled:opacity-60">
+                <span x-show="isGeneratingFolderOralExam" class="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+                <span x-text="isGeneratingFolderOralExam ? 'Cargando...' : 'Generar examen'"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: CREAR / EDITAR CARPETA ==================== -->
+    <div x-show="folderModalOpen" x-cloak style="display: none;" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click.self="folderModalOpen = false">
+        <div class="w-full max-w-md space-y-5 rounded-3xl border border-slate-100 bg-white p-6 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-bold text-slate-800" x-text="folderEditingId ? 'Editar Carpeta' : 'Crear Carpeta'"></h3>
+                <button @click="folderModalOpen = false" class="rounded-xl p-2 text-slate-400 hover:bg-slate-100"><i data-lucide="x" class="h-5 w-5"></i></button>
+            </div>
+            <label class="block space-y-1"><span class="text-xs font-bold text-slate-600">Nombre</span><input x-model="folderNameInput" maxlength="80" type="text" placeholder="Ej: Cálculo" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm"></label>
+            <label class="flex items-center justify-between rounded-xl border border-slate-200 p-3"><span class="text-xs font-bold text-slate-600">Color de la carpeta</span><input x-model="folderColorInput" type="color" class="h-9 w-12 cursor-pointer rounded border-0"></label>
+            <label class="block space-y-2"><span class="text-xs font-bold text-slate-600">Imagen (opcional)</span><input type="file" accept="image/*" @change="folderImageFile = $event.target.files[0] || null; folderImageName = folderImageFile?.name || ''" class="w-full text-xs text-slate-500"><span class="text-xs text-slate-400" x-text="folderImageName"></span></label>
+            <button @click="saveFolder()" :disabled="isCreatingFolder || !folderNameInput.trim()" class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0083B0] py-3 text-sm font-bold text-white hover:bg-[#007096] disabled:opacity-60"><span x-text="isCreatingFolder ? 'Guardando...' : (folderEditingId ? 'Guardar cambios' : 'Crear Carpeta')"></span></button>
         </div>
     </div>
 
