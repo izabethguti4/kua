@@ -62,27 +62,7 @@
     <header class="sticky top-0 z-50 ml-24 flex-shrink-0 glass-panel border-b border-slate-200/80 px-4 sm:px-8 py-3.5 flex items-center justify-between">
         <!-- Logo con Quokka Oficial -->
         <div class="flex items-center space-x-3 cursor-pointer" @click="setTab('home')">
-            <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#0083B0] to-[#00B4DB] p-1 flex items-center justify-center text-white shadow-md shadow-[#0083B0]/30 hover:scale-105 transition-transform">
-                <!-- SVG Mascota Quokka -->
-                <svg viewBox="0 0 100 100" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="28" cy="28" r="14" fill="#9A6B43"/>
-                    <circle cx="28" cy="28" r="8" fill="#F9C6B0"/>
-                    <circle cx="72" cy="28" r="14" fill="#9A6B43"/>
-                    <circle cx="72" cy="28" r="8" fill="#F9C6B0"/>
-                    <ellipse cx="50" cy="54" rx="34" ry="32" fill="#B27E52"/>
-                    <ellipse cx="50" cy="58" rx="28" ry="24" fill="#DDB088"/>
-                    <circle cx="30" cy="62" r="6" fill="#F87171" opacity="0.4"/>
-                    <circle cx="70" cy="62" r="6" fill="#F87171" opacity="0.4"/>
-                    <circle cx="36" cy="48" r="4.5" fill="#262626"/>
-                    <circle cx="37.5" cy="46.5" r="1.5" fill="#FFFFFF"/>
-                    <circle cx="64" cy="48" r="4.5" fill="#262626"/>
-                    <circle cx="65.5" cy="46.5" r="1.5" fill="#FFFFFF"/>
-                    <ellipse cx="50" cy="56" rx="4" ry="3" fill="#262626"/>
-                    <path d="M43 62 C46 66, 54 66, 57 62" stroke="#262626" stroke-width="2.5" stroke-linecap="round"/>
-                    <path d="M50 72 C47 70, 44 74, 50 82 C56 74, 53 70, 50 72 Z" fill="#EF4444"/>
-                    <circle cx="50" cy="71" r="2" fill="#22C55E"/>
-                </svg>
-            </div>
+            <img src="/static/img/logo.png" alt="Logo Kua" class="w-10 h-10 object-contain">
             <div>
                 <div class="flex items-center space-x-1.5">
                     <h1 class="text-2xl font-black tracking-tight bg-gradient-to-r from-[#0083B0] to-[#00B4DB] bg-clip-text text-transparent">Kua</h1>
@@ -176,26 +156,7 @@
 
                     <!-- Quokka Friendly Mascot Illustration -->
                     <div class="flex min-w-0 flex-col items-center justify-center text-center">
-                        <div class="w-36 h-36 sm:w-44 sm:h-44 bg-white/15 backdrop-blur-md rounded-full p-4 border border-white/20 shadow-inner flex items-center justify-center hover:scale-105 transition-transform">
-                            <svg viewBox="0 0 100 100" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="28" cy="28" r="14" fill="#9A6B43"/>
-                                <circle cx="28" cy="28" r="8" fill="#F9C6B0"/>
-                                <circle cx="72" cy="28" r="14" fill="#9A6B43"/>
-                                <circle cx="72" cy="28" r="8" fill="#F9C6B0"/>
-                                <ellipse cx="50" cy="54" rx="34" ry="32" fill="#B27E52"/>
-                                <ellipse cx="50" cy="58" rx="28" ry="24" fill="#DDB088"/>
-                                <circle cx="30" cy="62" r="6" fill="#F87171" opacity="0.4"/>
-                                <circle cx="70" cy="62" r="6" fill="#F87171" opacity="0.4"/>
-                                <circle cx="36" cy="48" r="4.5" fill="#262626"/>
-                                <circle cx="37.5" cy="46.5" r="1.5" fill="#FFFFFF"/>
-                                <circle cx="64" cy="48" r="4.5" fill="#262626"/>
-                                <circle cx="65.5" cy="46.5" r="1.5" fill="#FFFFFF"/>
-                                <ellipse cx="50" cy="56" rx="4" ry="3" fill="#262626"/>
-                                <path d="M43 62 C46 66, 54 66, 57 62" stroke="#262626" stroke-width="2.5" stroke-linecap="round"/>
-                                <path d="M50 72 C47 70, 44 74, 50 82 C56 74, 53 70, 50 72 Z" fill="#EF4444"/>
-                                <circle cx="50" cy="71" r="2" fill="#22C55E"/>
-                            </svg>
-                        </div>
+                        <img src="/static/img/mascota.png" alt="Koko el Quokka" class="w-32 h-32 sm:w-48 sm:h-48 object-contain mx-auto drop-shadow-lg">
                         <span class="mt-2 text-xs font-bold bg-white/20 px-3 py-1 rounded-full text-white">Koko el Quokka 🌿</span>
                     </div>
                 </div>
@@ -927,30 +888,10 @@
                             🍓 ❤️ ✨
                         </div>
 
-                        <div class="w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-gradient-to-tr from-sky-50 to-amber-50 border-4 border-white shadow-xl flex items-center justify-center p-3 relative cursor-pointer"
+                        <div class="w-40 h-40 rounded-full bg-gradient-to-tr from-sky-50 to-amber-50 border-4 border-white shadow-xl flex items-center justify-center p-3 relative cursor-pointer"
                              :class="{ 'quokka-eating-anim': quokkaEating }"
                              @click="feedQuokka()">
-                            <!-- SVG Quokka Mascot -->
-                            <svg viewBox="0 0 100 100" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="28" cy="28" r="14" fill="#9A6B43"/>
-                                <circle cx="28" cy="28" r="8" fill="#F9C6B0"/>
-                                <circle cx="72" cy="28" r="14" fill="#9A6B43"/>
-                                <circle cx="72" cy="28" r="8" fill="#F9C6B0"/>
-                                <ellipse cx="50" cy="54" rx="34" ry="32" fill="#B27E52"/>
-                                <ellipse cx="50" cy="58" rx="28" ry="24" fill="#DDB088"/>
-                                <circle cx="30" cy="62" r="6" fill="#F87171" opacity="0.4"/>
-                                <circle cx="70" cy="62" r="6" fill="#F87171" opacity="0.4"/>
-                                <circle cx="36" cy="48" r="4.5" fill="#262626"/>
-                                <circle cx="37.5" cy="46.5" r="1.5" fill="#FFFFFF"/>
-                                <circle cx="64" cy="48" r="4.5" fill="#262626"/>
-                                <circle cx="65.5" cy="46.5" r="1.5" fill="#FFFFFF"/>
-                                <ellipse cx="50" cy="56" rx="4" ry="3" fill="#262626"/>
-                                <path d="M43 62 C46 66, 54 66, 57 62" stroke="#262626" stroke-width="2.5" stroke-linecap="round"/>
-                                <ellipse cx="42" cy="78" rx="5" ry="4" fill="#9A6B43"/>
-                                <ellipse cx="58" cy="78" rx="5" ry="4" fill="#9A6B43"/>
-                                <path d="M50 72 C47 70, 44 74, 50 82 C56 74, 53 70, 50 72 Z" fill="#EF4444"/>
-                                <circle cx="50" cy="71" r="2" fill="#22C55E"/>
-                            </svg>
+                            <img src="/static/img/mascota.png" alt="Koko el Quokka" class="w-40 h-40 object-contain mx-auto drop-shadow-md">
                         </div>
                         <span class="mt-2 text-xs font-bold text-slate-700">Koko el Quokka</span>
                     </div>
