@@ -56,24 +56,39 @@
     <!-- Alpine.js (CDN) -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body x-data="vivaVoceApp" class="h-screen overflow-hidden flex antialiased selection:bg-[#0083B0]">
-
-<div class="flex flex-1 min-w-0 flex-col h-screen overflow-hidden">
+<body class="h-screen overflow-hidden flex antialiased selection:bg-[#0083B0]">
 
     <!-- TOP HEADER -->
-    <header class="sticky top-0 z-50 ml-24 glass-panel border-b border-slate-200/80 px-4 sm:px-8 py-3.5 flex items-center justify-between">
+    <header class="sticky top-0 z-50 glass-panel border-b border-slate-200/80 px-4 sm:px-8 py-3.5 flex items-center justify-between">
         <!-- Logo con Quokka Oficial -->
         <div class="flex items-center space-x-3 cursor-pointer" @click="setTab('home')">
             <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#0083B0] to-[#00B4DB] p-1 flex items-center justify-center text-white shadow-md shadow-[#0083B0]/30 hover:scale-105 transition-transform">
                 <!-- SVG Mascota Quokka -->
-                <img src="/static/img/logo.png" alt="Logo Kua" class="w-10 h-10 object-contain">
+                <svg viewBox="0 0 100 100" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="28" cy="28" r="14" fill="#9A6B43"/>
+                    <circle cx="28" cy="28" r="8" fill="#F9C6B0"/>
+                    <circle cx="72" cy="28" r="14" fill="#9A6B43"/>
+                    <circle cx="72" cy="28" r="8" fill="#F9C6B0"/>
+                    <ellipse cx="50" cy="54" rx="34" ry="32" fill="#B27E52"/>
+                    <ellipse cx="50" cy="58" rx="28" ry="24" fill="#DDB088"/>
+                    <circle cx="30" cy="62" r="6" fill="#F87171" opacity="0.4"/>
+                    <circle cx="70" cy="62" r="6" fill="#F87171" opacity="0.4"/>
+                    <circle cx="36" cy="48" r="4.5" fill="#262626"/>
+                    <circle cx="37.5" cy="46.5" r="1.5" fill="#FFFFFF"/>
+                    <circle cx="64" cy="48" r="4.5" fill="#262626"/>
+                    <circle cx="65.5" cy="46.5" r="1.5" fill="#FFFFFF"/>
+                    <ellipse cx="50" cy="56" rx="4" ry="3" fill="#262626"/>
+                    <path d="M43 62 C46 66, 54 66, 57 62" stroke="#262626" stroke-width="2.5" stroke-linecap="round"/>
+                    <path d="M50 72 C47 70, 44 74, 50 82 C56 74, 53 70, 50 72 Z" fill="#EF4444"/>
+                    <circle cx="50" cy="71" r="2" fill="#22C55E"/>
+                </svg>
             </div>
             <div>
                 <div class="flex items-center space-x-1.5">
                     <h1 class="text-2xl font-black tracking-tight bg-gradient-to-r from-[#0083B0] to-[#00B4DB] bg-clip-text text-transparent">Kua</h1>
                     <span class="text-[10px] font-bold uppercase tracking-wider bg-sky-100 text-[#0083B0] px-2 py-0.5 rounded-full">v2.1</span>
                 </div>
-                <p class="text-[11px] text-slate-500 font-medium">Tu compañero de estudio inteligente</p>
+                <p class="text-[11px] text-slate-500 font-medium">Estudio Inteligente & Quokka IA</p>
             </div>
         </div>
 
@@ -129,13 +144,13 @@
     </div>
 
     <!-- MAIN VIEW CONTAINER -->
-<main class="ml-24 flex-1 min-w-0 min-h-0 h-full overflow-y-auto p-6 max-w-full">
+<main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 pb-28">
         <!-- ==================== 1. INICIO (HOME) ==================== -->
         <div x-show="currentTab === 'home'" x-cloak class="space-y-8">
             <!-- Hero Welcome Card with Quokka Mascot in Celeste Marino -->
-            <div class="relative w-full max-w-full min-w-0 overflow-hidden rounded-3xl bg-gradient-to-br from-[#0083B0] via-[#007A9E] to-[#005C7B] text-white p-7 sm:p-10 shadow-xl shadow-[#0083B0]/20">
-                <div class="relative z-10 grid min-w-0 grid-cols-1 md:grid-cols-3 gap-6 items-center">
-                    <div class="min-w-0 md:col-span-2 space-y-4">
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0083B0] via-[#007A9E] to-[#005C7B] text-white p-7 sm:p-10 shadow-xl shadow-[#0083B0]/20">
+                <div class="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                    <div class="md:col-span-2 space-y-4">
                         <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold tracking-wide uppercase text-white">
                             <span>✨ Bienvenido a Kua — Estudio Activo & Oratoria</span>
                         </span>
@@ -161,8 +176,25 @@
 
                     <!-- Quokka Friendly Mascot Illustration -->
                     <div class="flex flex-col items-center justify-center text-center">
-                        <div class="w-36 h-36 sm:w-52 sm:h-52 bg-white/15 backdrop-blur-md rounded-full p-1 border border-white/20 shadow-inner flex items-center justify-center hover:scale-105 transition-transform">
-                            <img src="/static/img/logo.png" alt="Mascota Kua" class="w-32 h-32 sm:w-48 sm:h-48 object-contain mx-auto drop-shadow-lg">
+                        <div class="w-36 h-36 sm:w-44 sm:h-44 bg-white/15 backdrop-blur-md rounded-full p-4 border border-white/20 shadow-inner flex items-center justify-center hover:scale-105 transition-transform">
+                            <svg viewBox="0 0 100 100" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="28" cy="28" r="14" fill="#9A6B43"/>
+                                <circle cx="28" cy="28" r="8" fill="#F9C6B0"/>
+                                <circle cx="72" cy="28" r="14" fill="#9A6B43"/>
+                                <circle cx="72" cy="28" r="8" fill="#F9C6B0"/>
+                                <ellipse cx="50" cy="54" rx="34" ry="32" fill="#B27E52"/>
+                                <ellipse cx="50" cy="58" rx="28" ry="24" fill="#DDB088"/>
+                                <circle cx="30" cy="62" r="6" fill="#F87171" opacity="0.4"/>
+                                <circle cx="70" cy="62" r="6" fill="#F87171" opacity="0.4"/>
+                                <circle cx="36" cy="48" r="4.5" fill="#262626"/>
+                                <circle cx="37.5" cy="46.5" r="1.5" fill="#FFFFFF"/>
+                                <circle cx="64" cy="48" r="4.5" fill="#262626"/>
+                                <circle cx="65.5" cy="46.5" r="1.5" fill="#FFFFFF"/>
+                                <ellipse cx="50" cy="56" rx="4" ry="3" fill="#262626"/>
+                                <path d="M43 62 C46 66, 54 66, 57 62" stroke="#262626" stroke-width="2.5" stroke-linecap="round"/>
+                                <path d="M50 72 C47 70, 44 74, 50 82 C56 74, 53 70, 50 72 Z" fill="#EF4444"/>
+                                <circle cx="50" cy="71" r="2" fill="#22C55E"/>
+                            </svg>
                         </div>
                         <span class="mt-2 text-xs font-bold bg-white/20 px-3 py-1 rounded-full text-white">Koko el Quokka 🌿</span>
                     </div>
@@ -212,6 +244,7 @@
                         </div>
                         <div class="flex items-center space-x-2">
                             <h3 class="font-bold text-slate-800 text-lg">Examen Oral con IA</h3>
+                            <span class="text-[10px] font-bold uppercase bg-[#0083B0]/10 text-[#0083B0] px-2 py-0.5 rounded-full">Diferenciador</span>
                         </div>
                         <p class="text-xs text-slate-500 leading-relaxed">
                             Cuenta regresiva (3, 2, 1) y micrófono automático. Transcripción con captura de muletillas y evaluación contra tus notas.
@@ -234,10 +267,6 @@
                 </div>
 
                 <div class="flex items-center space-x-3">
-                    <button @click="openFolderEditor()"
-                            class="bg-white hover:bg-slate-50 text-[#0083B0] border border-[#0083B0]/30 font-semibold px-4 py-2 rounded-xl text-xs whitespace-nowrap">
-                        Crear Carpeta
-                    </button>
                     <div class="relative w-full sm:w-64">
                         <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
                         <input type="text" x-model="searchQuery" placeholder="Buscar mazo o materia..."
@@ -250,48 +279,6 @@
                 </div>
             </div>
 
-            <section x-show="!selectedFolder" class="space-y-3">
-                <h3 class="text-sm font-bold text-slate-700">Carpetas</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <template x-for="folder in folders" :key="folder.id">
-                        <div class="overflow-hidden bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
-                            <button @click="openFolder(folder)" class="w-full text-left">
-                                <div class="h-24 relative flex items-center justify-center" :style="`background-color: ${folder.color || '#0083B0'}`">
-                                    <img x-show="folder.image_path" :src="folder.image_path" :alt="`Foto de ${folder.name}`" class="absolute inset-0 w-full h-full object-cover">
-                                    <i x-show="!folder.image_path" data-lucide="folder-open" class="w-9 h-9 text-white/90"></i>
-                                </div>
-                                <div class="p-4 flex items-center justify-between gap-2">
-                                    <div class="min-w-0">
-                                        <span class="block font-bold text-slate-800 truncate" x-text="folder.name"></span>
-                                        <span class="text-xs text-slate-500" x-text="`${folder.deck_count || 0} mazos`"></span>
-                                    </div>
-                                    <i data-lucide="chevron-right" class="w-4 h-4 shrink-0 text-slate-400"></i>
-                                </div>
-                            </button>
-                            <button @click="openFolderEditor(folder)" class="w-full border-t border-slate-100 py-2 text-xs font-semibold text-slate-500 hover:text-[#0083B0] hover:bg-slate-50">
-                                Editar carpeta
-                            </button>
-                        </div>
-                    </template>
-                    <p x-show="folders.length === 0" class="text-xs text-slate-400">Aún no tienes carpetas. Crea una para organizar tus materias.</p>
-                </div>
-            </section>
-
-            <section x-show="selectedFolder" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200">
-                <div class="flex items-center gap-3">
-                    <button @click="selectedFolder = null" class="p-2 rounded-lg hover:bg-slate-100 text-slate-600" title="Volver a biblioteca"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
-                    <div>
-                        <p class="text-[10px] uppercase tracking-wider font-bold text-slate-400">Carpeta</p>
-                        <h3 class="font-bold text-slate-800" x-text="selectedFolder?.name"></h3>
-                    </div>
-                </div>
-                <button @click="startFolderOralExam(selectedFolder)" :disabled="isGeneratingFolderOralExam || !selectedFolder?.deck_count"
-                        class="px-4 py-2 rounded-xl bg-[#0083B0] text-white text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span x-text="isGeneratingFolderOralExam ? 'Generando examen…' : 'Examen Oral de la Carpeta'"></span>
-                </button>
-            </section>
-
-            <h3 class="text-sm font-bold text-slate-700" x-text="selectedFolder ? `Mazos en ${selectedFolder.name}` : 'Mazos sin carpeta'"></h3>
             <!-- Decks Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 <template x-for="deck in filteredDecks()" :key="deck.id">
@@ -345,14 +332,6 @@
                                     <span class="font-bold text-slate-700" x-text="deck.oral_count || 0"></span>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <label class="text-[10px] text-slate-400 font-semibold">Carpeta</label>
-                            <select :value="deck.folder_id || ''" @change="moveDeckToFolder(deck, $event.target.value)" class="flex-1 min-w-0 text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-slate-600">
-                                <option value="">Sin carpeta</option>
-                                <template x-for="folder in folders" :key="folder.id"><option :value="folder.id" x-text="folder.name"></option></template>
-                            </select>
                         </div>
 
                         <!-- Action Buttons -->
@@ -898,10 +877,30 @@
                             🍓 ❤️ ✨
                         </div>
 
-                        <div class="w-44 h-44 sm:w-52 sm:h-52 rounded-full bg-gradient-to-tr from-sky-50 to-amber-50 border-4 border-white shadow-xl flex items-center justify-center relative cursor-pointer"
+                        <div class="w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-gradient-to-tr from-sky-50 to-amber-50 border-4 border-white shadow-xl flex items-center justify-center p-3 relative cursor-pointer"
                              :class="{ 'quokka-eating-anim': quokkaEating }"
                              @click="feedQuokka()">
-                            <img src="/static/img/mascota.png" alt="Mascota Kua" class="w-40 h-40 object-contain mx-auto">
+                            <!-- SVG Quokka Mascot -->
+                            <svg viewBox="0 0 100 100" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="28" cy="28" r="14" fill="#9A6B43"/>
+                                <circle cx="28" cy="28" r="8" fill="#F9C6B0"/>
+                                <circle cx="72" cy="28" r="14" fill="#9A6B43"/>
+                                <circle cx="72" cy="28" r="8" fill="#F9C6B0"/>
+                                <ellipse cx="50" cy="54" rx="34" ry="32" fill="#B27E52"/>
+                                <ellipse cx="50" cy="58" rx="28" ry="24" fill="#DDB088"/>
+                                <circle cx="30" cy="62" r="6" fill="#F87171" opacity="0.4"/>
+                                <circle cx="70" cy="62" r="6" fill="#F87171" opacity="0.4"/>
+                                <circle cx="36" cy="48" r="4.5" fill="#262626"/>
+                                <circle cx="37.5" cy="46.5" r="1.5" fill="#FFFFFF"/>
+                                <circle cx="64" cy="48" r="4.5" fill="#262626"/>
+                                <circle cx="65.5" cy="46.5" r="1.5" fill="#FFFFFF"/>
+                                <ellipse cx="50" cy="56" rx="4" ry="3" fill="#262626"/>
+                                <path d="M43 62 C46 66, 54 66, 57 62" stroke="#262626" stroke-width="2.5" stroke-linecap="round"/>
+                                <ellipse cx="42" cy="78" rx="5" ry="4" fill="#9A6B43"/>
+                                <ellipse cx="58" cy="78" rx="5" ry="4" fill="#9A6B43"/>
+                                <path d="M50 72 C47 70, 44 74, 50 82 C56 74, 53 70, 50 72 Z" fill="#EF4444"/>
+                                <circle cx="50" cy="71" r="2" fill="#22C55E"/>
+                            </svg>
                         </div>
                         <span class="mt-2 text-xs font-bold text-slate-700">Koko el Quokka</span>
                     </div>
@@ -1031,6 +1030,8 @@
                 </div>
             </div>
         </div>
+    </main>
+
     <!-- ==================== VISTA: MI PERFIL ==================== -->
     <div x-show="currentTab === 'profile'" x-cloak class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 pb-28">
         <div class="max-w-lg mx-auto space-y-6">
@@ -1071,7 +1072,7 @@
                     <img :src="profileAvatarUrl" alt="Foto de perfil" class="w-full h-full object-cover">
                 </template>
                 <template x-if="!profileAvatarUrl">
-                    <span x-text="(currentUser.display_name || 'U')[0].toUpperCase()"></span>
+                    <span x-text="(profileForm.display_name || 'U')[0].toUpperCase()"></span>
                 </template>
 
                 <label title="Cambiar foto de perfil" class="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white text-[11px] font-bold space-y-1">
@@ -1083,13 +1084,24 @@
 
             <!-- Nombre y Universidad -->
             <div class="space-y-1 mb-1">
-                <h3 class="font-bold text-slate-800 text-xl sm:text-2xl leading-tight" x-text="currentUser.display_name || 'Nombre del estudiante'"></h3>
-                <p class="text-xs sm:text-sm text-slate-500 font-medium" x-text="currentUser.university || 'Universidad no configurada'"></p>
+                <h3 class="font-bold text-slate-800 text-xl sm:text-2xl leading-tight" x-text="profileForm.display_name || 'Nombre del estudiante'"></h3>
+                <p class="text-xs sm:text-sm text-slate-500 font-medium" x-text="profileForm.university || 'Universidad no configurada'"></p>
             </div>
 
         </div>
     </div>
 </div>
+    <!-- INFORMACIÓN DEL USUARIO (Siempre visible independientemente de la foto) -->
+    <div class="space-y-1 mb-1">
+        <!-- El Nombre Completo siempre se mantiene aquí -->
+        <h3 class="font-bold text-slate-800 text-xl sm:text-2xl leading-tight" 
+            x-text="profileForm.display_name || 'Nombre del estudiante'"></h3>
+        <p class="text-xs sm:text-sm text-slate-500 font-medium" 
+           x-text="profileForm.university || 'Universidad no configurada'"></p>
+    </div>
+
+</div>
+
             <!-- Formulario de Edición -->
             <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-5">
                 <div class="flex items-center space-x-2 text-[#0083B0]">
@@ -1194,14 +1206,10 @@
 
         </div>
     </div>
-    </div>
-
-    </main>
-    </div>
 
     <!-- FIXED BOTTOM NAVIGATION BAR IN CELESTE MARINO -->
-    <!-- Barra de Navegación Vertical (Izquierda) -->
-<nav class="fixed left-0 top-0 h-screen w-24 bg-white border-r border-slate-200 flex flex-col items-center pt-20 pb-4 space-y-4 z-50 shadow-sm overflow-y-auto" style="scrollbar-width: none; -ms-overflow-style: none;">
+    <<!-- Barra de Navegación Vertical (Izquierda) -->
+<nav class="fixed left-0 top-20 bottom-0 w-24 bg-white border-r border-slate-200 flex flex-col items-center pt-6 pb-4 space-y-4 z-40 shadow-sm overflow-y-auto" style="scrollbar-width: none; -ms-overflow-style: none;">
     <!-- Aquí van tus botones. Mantén los que ya tenías -->
     <button @click="setTab('home')" class="flex flex-col items-center text-slate-500 hover:text-[#0083B0] transition-colors">
         <i data-lucide="home" class="w-6 h-6 mb-1"></i>
@@ -1243,7 +1251,7 @@
         <span class="text-[10px] font-bold">Progreso</span>
     </button>
 
-    <button @click="logout()" class="flex flex-col items-center text-red-400 hover:text-red-600 transition-colors">
+    <button onclick="localStorage.clear(); window.location.reload();" class="flex flex-col items-center text-red-400 hover:text-red-600 transition-colors">
         <i data-lucide="log-out" class="w-6 h-6 mb-1"></i>
         <span class="text-[10px] font-bold text-center leading-tight">Cerrar<br>Sesión</span>
     </button>
@@ -1292,14 +1300,6 @@
                     <input type="text" x-model="customSubject" placeholder="Ej: Redes y Telecomunicaciones"
                            class="w-full px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
                 </div>
-            </div>
-
-            <div class="space-y-1">
-                <label class="text-xs font-bold text-slate-700">Carpeta de materia</label>
-                <select x-model="newDeckFolderId" class="w-full px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
-                    <option value="">Sin carpeta</option>
-                    <template x-for="folder in folders" :key="folder.id"><option :value="String(folder.id)" x-text="folder.name"></option></template>
-                </select>
             </div>
 
             <!-- CONTROLES DE PERSONALIZACIÓN DE ESTUDIO (REQUISITO CRÍTICO) -->
@@ -1455,19 +1455,28 @@
     <!-- ==================== MODAL: AUTENTICACIÓN (LOGIN / REGISTRO) ==================== -->
     <div x-show="authModalOpen" x-cloak 
          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
-         @click.self="isAuthenticated && (authModalOpen = false)">
+         @click.self="authModalOpen = false">
         <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 shadow-2xl border border-slate-100 max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2.5">
                     <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#0083B0] to-[#00B4DB] p-1 flex items-center justify-center text-white">
-                        <img src="/static/img/logo.png" alt="Logo Kua" class="w-10 h-10 object-contain">
+                        <svg viewBox="0 0 100 100" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="28" cy="28" r="14" fill="#9A6B43"/>
+                            <circle cx="72" cy="28" r="14" fill="#9A6B43"/>
+                            <ellipse cx="50" cy="54" rx="34" ry="32" fill="#B27E52"/>
+                            <ellipse cx="50" cy="58" rx="28" ry="24" fill="#DDB088"/>
+                            <circle cx="36" cy="48" r="4.5" fill="#262626"/>
+                            <circle cx="64" cy="48" r="4.5" fill="#262626"/>
+                            <ellipse cx="50" cy="56" rx="4" ry="3" fill="#262626"/>
+                            <path d="M43 62 C46 66, 54 66, 57 62" stroke="#262626" stroke-width="2.5" stroke-linecap="round"/>
+                        </svg>
                     </div>
                     <div>
                         <h3 class="text-xl font-bold text-slate-800">Cuenta Kua</h3>
                         <p class="text-xs text-slate-400">Accede a tus apuntes y comunidad</p>
                     </div>
                 </div>
-                <button x-show="isAuthenticated" @click="authModalOpen = false" class="text-slate-400 hover:text-slate-600">
+                <button @click="authModalOpen = false" class="text-slate-400 hover:text-slate-600">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -1632,62 +1641,6 @@
     </div>
 
     <!-- ==================== MODAL: CONFIGURAR GEMINI API KEY ==================== -->
-    <div x-show="oralExamConfigOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" @click.self="oralExamConfigOpen = false">
-        <div class="bg-white rounded-3xl p-6 w-full max-w-md space-y-5 shadow-2xl">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-[10px] uppercase tracking-wider font-bold text-[#0083B0]">Configuración</p>
-                    <h3 class="text-lg font-bold text-slate-800">Examen Oral</h3>
-                </div>
-                <button @click="oralExamConfigOpen = false" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-            <p class="text-xs text-slate-500" x-text="oralExamTargetFolder ? `Carpeta: ${oralExamTargetFolder.name}` : `Mazo: ${oralExamTargetDeck?.name || ''}`"></p>
-            <div class="space-y-2">
-                <div class="flex items-center justify-between">
-                    <label for="oral-question-count" class="text-xs font-bold text-slate-700">Cantidad de preguntas</label>
-                    <span class="text-sm font-bold text-[#0083B0]" x-text="oralQuestionCount"></span>
-                </div>
-                <input id="oral-question-count" type="range" min="3" max="15" step="1" x-model.number="oralQuestionCount" class="w-full accent-[#0083B0]">
-                <div class="flex justify-between text-[10px] text-slate-400"><span>3</span><span>15</span></div>
-            </div>
-            <div class="space-y-1">
-                <label for="oral-difficulty" class="text-xs font-bold text-slate-700">Dificultad</label>
-                <select id="oral-difficulty" x-model="oralDifficulty" class="w-full px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
-                    <option>Fácil</option><option>Medio</option><option>Difícil</option>
-                </select>
-            </div>
-            <div class="flex gap-3 pt-1">
-                <button @click="oralExamConfigOpen = false" class="w-1/2 py-3 bg-slate-100 text-slate-700 font-semibold rounded-xl text-sm">Cancelar</button>
-                <button @click="confirmOralExam()" :disabled="isGeneratingFolderOralExam" class="w-1/2 py-3 bg-[#0083B0] text-white font-bold rounded-xl text-sm disabled:opacity-60" x-text="isGeneratingFolderOralExam ? 'Generando examen…' : 'Comenzar examen'"></button>
-            </div>
-        </div>
-    </div>
-
-    <div x-show="folderModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" @click.self="folderModalOpen = false">
-        <form @submit.prevent="saveFolder()" class="bg-white rounded-3xl p-6 w-full max-w-md space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between">
-                <h3 class="text-lg font-bold text-slate-800" x-text="folderEditingId ? 'Editar Carpeta' : 'Crear Carpeta'"></h3>
-                <button type="button" @click="folderModalOpen = false" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-            <label class="block text-xs font-bold text-slate-700" for="folder-name">Nombre de la materia</label>
-            <input id="folder-name" type="text" x-model="folderNameInput" maxlength="80" required placeholder="Ej. Cálculo" class="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
-            <div class="space-y-1">
-                <label class="block text-xs font-bold text-slate-700" for="folder-color">Color de la carpeta</label>
-                <input id="folder-color" type="color" x-model="folderColorInput" class="w-full h-11 p-1 bg-white rounded-xl border border-slate-200 cursor-pointer">
-            </div>
-            <div class="space-y-1">
-                <label class="block text-xs font-bold text-slate-700" for="folder-image">Foto de la carpeta</label>
-                <input id="folder-image" type="file" accept="image/png,image/jpeg,image/webp,image/gif" @change="folderImageFile = $event.target.files[0] || null; folderImageName = folderImageFile?.name || folderImageName" class="w-full text-xs text-slate-600 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-sky-50 file:text-[#0083B0]">
-                <p x-show="folderImageName" class="text-[11px] text-slate-400" x-text="folderImageName"></p>
-            </div>
-            <div class="flex gap-3">
-                <button type="button" @click="folderModalOpen = false" class="w-1/2 py-3 bg-slate-100 text-slate-700 font-semibold rounded-xl text-sm">Cancelar</button>
-                <button type="submit" :disabled="isCreatingFolder" class="w-1/2 py-3 bg-[#0083B0] text-white font-bold rounded-xl text-sm disabled:opacity-60" x-text="isCreatingFolder ? 'Guardando…' : (folderEditingId ? 'Guardar Cambios' : 'Crear Carpeta')"></button>
-            </div>
-        </form>
-    </div>
-
-    <!-- ==================== MODAL: CONFIGURAR GEMINI API KEY ==================== -->
     <div x-show="apiKeyModalOpen" x-cloak 
          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
          @click.self="apiKeyModalOpen = false">
@@ -1728,7 +1681,7 @@
     </div>
 
     <!-- ==================== MODAL: DETALLE DE RESPUESTA ORAL ==================== -->
-    <div x-show="selectedAnswerDetail" x-cloak style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click.self="selectedAnswerDetail = null">
+    <div x-show="selectedAnswerDetail" x-clock style="display: none;" class=""fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click.self="selectedAnswerDetail = null">
         <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-[#0083B0] bg-[#0083B0]/10 px-2.5 py-1 rounded-full" 
