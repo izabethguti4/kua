@@ -1,0 +1,1773 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kua — Estudio Inteligente & Mascota Quokka</title>
+
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#F0F9FB',
+                            100: '#E0F2F7',
+                            200: '#BAE3EE',
+                            300: '#7ECBE0',
+                            400: '#38AFD0',
+                            500: '#0083B0', // Celeste Marino Principal
+                            600: '#007096',
+                            700: '#005978',
+                            800: '#004760',
+                            900: '#00394D'
+                        },
+                        marino: {
+                            light: '#00B4DB',
+                            DEFAULT: '#0083B0',
+                            dark: '#005C7B'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'Plus Jakarta Sans', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Lucide Icons (CDN) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Chart.js (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom CSS (Celeste Marino, Quokka Animations & Outfit font) -->
+    <link rel="stylesheet" href="/static/css/custom.css?v=2.2.0">
+
+    <!-- Audio & Charts Modules -->
+    <script src="/static/js/audio.js?v=2.2.0"></script>
+    <script src="/static/js/charts.js?v=2.2.0"></script>
+
+    <!-- Alpine.js Application -->
+    <script src="/static/js/app.js?v=2.2.0"></script>
+    <!-- Alpine.js (CDN) -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body x-data="vivaVoceApp" class="h-screen overflow-hidden flex antialiased selection:bg-[#0083B0]">
+
+<div class="flex flex-1 min-w-0 flex-col h-screen overflow-hidden">
+
+    <!-- TOP HEADER -->
+    <header class="sticky top-0 z-50 ml-24 glass-panel border-b border-slate-200/80 px-4 sm:px-8 py-3.5 flex items-center justify-between">
+        <!-- Logo con Quokka Oficial -->
+        <div class="flex items-center space-x-3 cursor-pointer" @click="setTab('home')">
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#0083B0] to-[#00B4DB] p-1 flex items-center justify-center text-white shadow-md shadow-[#0083B0]/30 hover:scale-105 transition-transform">
+                <!-- SVG Mascota Quokka -->
+                <img src="/static/img/logo.png" alt="Logo Kua" class="w-10 h-10 object-contain">
+            </div>
+            <div>
+                <div class="flex items-center space-x-1.5">
+                    <h1 class="text-2xl font-black tracking-tight bg-gradient-to-r from-[#0083B0] to-[#00B4DB] bg-clip-text text-transparent">Kua</h1>
+                    <span class="text-[10px] font-bold uppercase tracking-wider bg-sky-100 text-[#0083B0] px-2 py-0.5 rounded-full">v2.1</span>
+                </div>
+                <p class="text-[11px] text-slate-500 font-medium">Tu compañero de estudio inteligente</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2.5 sm:space-x-3">
+            <!-- Quokka Fruits Counter Widget in Header -->
+            <button @click="setTab('dashboard')" 
+                    class="flex items-center space-x-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 px-2.5 py-1.5 rounded-full text-xs font-bold text-amber-800 transition-all"
+                    title="Frutas disponibles para alimentar a tu Quokka">
+                <span class="text-sm">🍓</span>
+                <span x-text="currentUser.fruits_count || 0"></span>
+                <span class="hidden md:inline text-[11px] font-semibold text-amber-600">frutas</span>
+            </button>
+
+            <!-- User Profile Button -->
+            <button @click="setTab('profile')" 
+                    class="flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all"
+                    title="Mi Perfil">
+                <div class="w-5 h-5 rounded-full bg-[#0083B0] text-white flex items-center justify-center text-[10px] font-bold">
+                    <span x-text="(currentUser.display_name || 'U')[0].toUpperCase()"></span>
+                </div>
+                <span class="hidden sm:inline font-bold" x-text="`@${currentUser.username || 'usuario'}`"></span>
+            </button>
+
+            <!-- API Key Status Badge -->
+            <button @click="apiKeyModalOpen = true" 
+                    class="hidden md:flex items-center space-x-2 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all"
+                    :class="hasApiKey ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 animate-pulse'">
+                <span class="w-2 h-2 rounded-full" :class="hasApiKey ? 'bg-emerald-500' : 'bg-amber-500'"></span>
+                <span x-text="hasApiKey ? 'Gemini Activo' : 'API Key'"></span>
+            </button>
+
+            <!-- Upload Notes Button -->
+            <button @click="uploadModalOpen = true" 
+                    class="flex items-center space-x-1.5 bg-[#0083B0] hover:bg-[#007096] text-white text-xs sm:text-sm font-bold px-3.5 sm:px-4 py-2 rounded-xl shadow-sm shadow-[#0083B0]/30 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <span>Crear Mazo</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- TOAST NOTIFICATION -->
+    <div x-show="statusMessage" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 transform translate-y-4"
+         x-transition:enter-end="opacity-100 transform translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 transform translate-y-0"
+         x-transition:leave-end="opacity-0 transform translate-y-4"
+         class="fixed bottom-24 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-3 text-sm font-medium"
+         style="display: none;">
+        <i data-lucide="check" class="w-4 h-4 text-[#00B4DB]"></i>
+        <span x-text="statusMessage"></span>
+    </div>
+
+    <!-- MAIN VIEW CONTAINER -->
+<main class="ml-24 flex-1 min-w-0 min-h-0 h-full overflow-y-auto p-6 max-w-full">
+        <!-- ==================== 1. INICIO (HOME) ==================== -->
+        <div x-show="currentTab === 'home'" x-cloak class="space-y-8">
+            <!-- Hero Welcome Card with Quokka Mascot in Celeste Marino -->
+            <div class="relative w-full max-w-full min-w-0 overflow-hidden rounded-3xl bg-gradient-to-br from-[#0083B0] via-[#007A9E] to-[#005C7B] text-white p-7 sm:p-10 shadow-xl shadow-[#0083B0]/20">
+                <div class="relative z-10 grid min-w-0 grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                    <div class="min-w-0 md:col-span-2 space-y-4">
+                        <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold tracking-wide uppercase text-white">
+                            <span>✨ Bienvenido a Kua — Estudio Activo & Oratoria</span>
+                        </span>
+                        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight">
+                            Hola <span x-text="currentUser.display_name"></span>, ¡domina tus materias con tu Quokka!
+                        </h2>
+                        <p class="text-sky-100 text-sm sm:text-base leading-relaxed">
+                            Crea flashcards con repetición espaciada SM-2, resuelve quizzes interactivos y practica tus defensas orales con transcripción de muletillas y feedback pedagógico con IA.
+                        </p>
+                        <div class="pt-2 flex flex-wrap gap-3">
+                            <button @click="uploadModalOpen = true" 
+                                    class="bg-white text-[#0083B0] hover:bg-slate-50 font-bold px-6 py-3.5 rounded-2xl shadow-lg transition-all flex items-center space-x-2 text-sm hover:scale-[1.02]">
+                                <i data-lucide="upload" class="w-4 h-4"></i>
+                                <span>Subir Apuntes</span>
+                            </button>
+                            <button @click="setTab('forum')" 
+                                    class="bg-white/15 hover:bg-white/25 border border-white/25 text-white font-semibold px-6 py-3.5 rounded-2xl transition-all flex items-center space-x-2 text-sm backdrop-blur-sm">
+                                <i data-lucide="users" class="w-4 h-4"></i>
+                                <span>Ver Foro de Comunidad</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quokka Friendly Mascot Illustration -->
+                    <div class="flex flex-col items-center justify-center text-center">
+                        <div class="w-36 h-36 sm:w-52 sm:h-52 bg-white/15 backdrop-blur-md rounded-full p-1 border border-white/20 shadow-inner flex items-center justify-center hover:scale-105 transition-transform">
+                            <img src="/static/img/logo.png" alt="Mascota Kua" class="w-32 h-32 sm:w-48 sm:h-48 object-contain mx-auto drop-shadow-lg">
+                        </div>
+                        <span class="mt-2 text-xs font-bold bg-white/20 px-3 py-1 rounded-full text-white">Koko el Quokka 🌿</span>
+                    </div>
+                </div>
+
+                <div class="absolute -right-12 -bottom-16 w-80 h-80 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+            </div>
+
+            <!-- 3 Pilares de Estudio -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+                    <div class="space-y-3">
+                        <div class="w-12 h-12 rounded-2xl bg-[#0083B0]/10 text-[#0083B0] flex items-center justify-center font-bold">
+                            <i data-lucide="book-open" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-lg">Flashcards SM-2</h3>
+                        <p class="text-xs text-slate-500 leading-relaxed">
+                            Algoritmo científico SuperMemo-2. Estudia tarjetas en intervalos óptimos para consolidar conceptos en la memoria a largo plazo.
+                        </p>
+                    </div>
+                    <button @click="setTab('library')" class="mt-4 text-xs font-bold text-[#0083B0] hover:text-[#007096] flex items-center space-x-1">
+                        <span>Ver mis mazos</span>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+
+                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+                    <div class="space-y-3">
+                        <div class="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center font-bold">
+                            <i data-lucide="help-circle" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-lg">Quiz Interactivo</h3>
+                        <p class="text-xs text-slate-500 leading-relaxed">
+                            Evaluación formativa de opción múltiple generada por IA para poner a prueba tu retención inmediata y rachas de aciertos.
+                        </p>
+                    </div>
+                    <button @click="setTab('library')" class="mt-4 text-xs font-bold text-sky-600 hover:text-sky-700 flex items-center space-x-1">
+                        <span>Iniciar un quiz</span>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+
+                <div class="bg-white p-6 rounded-3xl border border-[#0083B0]/20 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden">
+                    <div class="space-y-3">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#0083B0] to-[#00B4DB] text-white flex items-center justify-center font-bold shadow-md shadow-[#0083B0]/20">
+                            <i data-lucide="mic" class="w-6 h-6"></i>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <h3 class="font-bold text-slate-800 text-lg">Examen Oral con IA</h3>
+                        </div>
+                        <p class="text-xs text-slate-500 leading-relaxed">
+                            Cuenta regresiva (3, 2, 1) y micrófono automático. Transcripción con captura de muletillas y evaluación contra tus notas.
+                        </p>
+                    </div>
+                    <button @click="setTab('library')" class="mt-4 text-xs font-bold text-[#0083B0] hover:text-[#007096] flex items-center space-x-1">
+                        <span>Simular examen oral</span>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 2. BIBLIOTECA (LIBRARY) CON PRIVACIDAD ==================== -->
+        <div x-show="currentTab === 'library'" x-cloak class="space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Tu Biblioteca de Mazos</h2>
+                    <p class="text-sm text-slate-500">Administra tus notas, ajusta la privacidad y comparte con el Foro.</p>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <button @click="openFolderEditor()"
+                            class="bg-white hover:bg-slate-50 text-[#0083B0] border border-[#0083B0]/30 font-semibold px-4 py-2 rounded-xl text-xs whitespace-nowrap">
+                        Crear Carpeta
+                    </button>
+                    <div class="relative w-full sm:w-64">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                        <input type="text" x-model="searchQuery" placeholder="Buscar mazo o materia..."
+                               class="w-full pl-9 pr-4 py-2 bg-white rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
+                    </div>
+                    <button @click="uploadModalOpen = true" 
+                            class="bg-[#0083B0] hover:bg-[#007096] text-white font-semibold px-4 py-2 rounded-xl text-xs whitespace-nowrap shadow-sm">
+                        + Nuevo
+                    </button>
+                </div>
+            </div>
+
+            <section x-show="!selectedFolder" class="space-y-3">
+                <h3 class="text-sm font-bold text-slate-700">Carpetas</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <template x-for="folder in folders" :key="folder.id">
+                        <div class="overflow-hidden bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
+                            <button @click="openFolder(folder)" class="w-full text-left">
+                                <div class="h-24 relative flex items-center justify-center" :style="`background-color: ${folder.color || '#0083B0'}`">
+                                    <img x-show="folder.image_path" :src="folder.image_path" :alt="`Foto de ${folder.name}`" class="absolute inset-0 w-full h-full object-cover">
+                                    <i x-show="!folder.image_path" data-lucide="folder-open" class="w-9 h-9 text-white/90"></i>
+                                </div>
+                                <div class="p-4 flex items-center justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <span class="block font-bold text-slate-800 truncate" x-text="folder.name"></span>
+                                        <span class="text-xs text-slate-500" x-text="`${folder.deck_count || 0} mazos`"></span>
+                                    </div>
+                                    <i data-lucide="chevron-right" class="w-4 h-4 shrink-0 text-slate-400"></i>
+                                </div>
+                            </button>
+                            <button @click="openFolderEditor(folder)" class="w-full border-t border-slate-100 py-2 text-xs font-semibold text-slate-500 hover:text-[#0083B0] hover:bg-slate-50">
+                                Editar carpeta
+                            </button>
+                        </div>
+                    </template>
+                    <p x-show="folders.length === 0" class="text-xs text-slate-400">Aún no tienes carpetas. Crea una para organizar tus materias.</p>
+                </div>
+            </section>
+
+            <section x-show="selectedFolder" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200">
+                <div class="flex items-center gap-3">
+                    <button @click="selectedFolder = null" class="p-2 rounded-lg hover:bg-slate-100 text-slate-600" title="Volver a biblioteca"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
+                    <div>
+                        <p class="text-[10px] uppercase tracking-wider font-bold text-slate-400">Carpeta</p>
+                        <h3 class="font-bold text-slate-800" x-text="selectedFolder?.name"></h3>
+                    </div>
+                </div>
+                <button @click="startFolderOralExam(selectedFolder)" :disabled="isGeneratingFolderOralExam || !selectedFolder?.deck_count"
+                        class="px-4 py-2 rounded-xl bg-[#0083B0] text-white text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span x-text="isGeneratingFolderOralExam ? 'Generando examen…' : 'Examen Oral de la Carpeta'"></span>
+                </button>
+            </section>
+
+            <h3 class="text-sm font-bold text-slate-700" x-text="selectedFolder ? `Mazos en ${selectedFolder.name}` : 'Mazos sin carpeta'"></h3>
+            <!-- Decks Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <template x-for="deck in filteredDecks()" :key="deck.id">
+                    <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
+                        <div class="space-y-3">
+                            <!-- Top row: Subject and Privacy Badge/Toggle -->
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-[#0083B0] bg-[#0083B0]/10 px-2.5 py-0.5 rounded-full"
+                                      x-text="deck.subject || 'General'"></span>
+                                
+                                <!-- Privacy Toggle Switch -->
+                                <button @click="toggleDeckPrivacy(deck, $event)"
+                                        class="flex items-center space-x-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border transition-all"
+                                        :class="deck.is_public ? 'bg-sky-50 text-[#0083B0] border-[#0083B0]/30 hover:bg-sky-100' : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'"
+                                        :title="deck.is_public ? 'Público en el Foro (clic para hacer privado)' : 'Privado (clic para compartir en el Foro)'">
+                                    <span x-text="deck.is_public ? '🌐 En Foro' : '🔒 Privado'"></span>
+                                </button>
+                            </div>
+
+                            <div class="flex items-start justify-between">
+                                <h3 class="font-bold text-slate-800 text-base leading-snug" x-text="deck.name"></h3>
+                                <button @click="deleteDeck(deck.id, $event)" class="text-slate-300 hover:text-red-500 p-1" title="Eliminar mazo">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+
+                            <!-- Difficulty & Clone indicator -->
+                            <div class="flex items-center space-x-2">
+                                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md"
+                                      :class="{
+                                          'bg-emerald-50 text-emerald-700': deck.difficulty === 'Fácil',
+                                          'bg-amber-50 text-amber-700': deck.difficulty === 'Medio' || !deck.difficulty,
+                                          'bg-red-50 text-red-700': deck.difficulty === 'Difícil'
+                                      }"
+                                      x-text="`Dificultad: ${deck.difficulty || 'Medio'}`"></span>
+                                <span x-show="deck.cloned_from_id" class="text-[10px] font-semibold text-slate-400">📋 Copia de comunidad</span>
+                            </div>
+
+                            <!-- Counts -->
+                            <div class="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-2xl text-center text-[11px]">
+                                <div>
+                                    <span class="block text-slate-400 font-medium">Cards</span>
+                                    <span class="font-bold text-slate-700" x-text="deck.flashcards_count || 0"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-slate-400 font-medium">Quiz</span>
+                                    <span class="font-bold text-slate-700" x-text="deck.quiz_count || 0"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-slate-400 font-medium">Oral</span>
+                                    <span class="font-bold text-slate-700" x-text="deck.oral_count || 0"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <label class="text-[10px] text-slate-400 font-semibold">Carpeta</label>
+                            <select :value="deck.folder_id || ''" @change="moveDeckToFolder(deck, $event.target.value)" class="flex-1 min-w-0 text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-slate-600">
+                                <option value="">Sin carpeta</option>
+                                <template x-for="folder in folders" :key="folder.id"><option :value="folder.id" x-text="folder.name"></option></template>
+                            </select>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-1.5">
+                            <button @click="startStudy(deck)" 
+                                    class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all flex items-center justify-center space-x-1">
+                                <i data-lucide="book-open" class="w-3.5 h-3.5 text-[#0083B0]"></i>
+                                <span>Cards</span>
+                            </button>
+                            <button @click="startQuiz(deck)" 
+                                    class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all flex items-center justify-center space-x-1">
+                                <i data-lucide="help-circle" class="w-3.5 h-3.5 text-sky-600"></i>
+                                <span>Quiz</span>
+                            </button>
+                            <button @click="startOralExam(deck)" 
+                                    class="flex-1 py-2 bg-[#0083B0] hover:bg-[#007096] text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center space-x-1 shadow-sm">
+                                <i data-lucide="mic" class="w-3.5 h-3.5"></i>
+                                <span>Oral IA</span>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- ==================== 3. ESTUDIO (FLASHCARDS SM-2) ==================== -->
+        <div x-show="currentTab === 'study'" x-cloak class="space-y-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-bold text-[#0083B0] uppercase tracking-wider" x-text="studyDeck?.name || 'Mazo'"></span>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Repetición Espaciada SM-2</h2>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs font-bold text-slate-500" x-text="flashcards.length ? `${currentCardIndex + 1} de ${flashcards.length}` : '0 tarjetas'"></span>
+                </div>
+            </div>
+
+            <!-- Flashcard Container -->
+            <div x-show="flashcards.length > 0 && !studyCompleted" class="perspective-1000 max-w-2xl mx-auto">
+                <div class="relative w-full h-80 sm:h-96 rounded-3xl cursor-pointer card-flip-container transform-style-3d shadow-xl"
+                     :class="{ 'rotate-y-180': isFlipped }"
+                     @click="flipCard()">
+                    
+                    <!-- Frente -->
+                    <div class="absolute inset-0 bg-white rounded-3xl p-8 border border-slate-200/80 flex flex-col justify-between backface-hidden">
+                        <div class="flex items-center justify-between text-xs text-slate-400 font-semibold">
+                            <span>PREGUNTA</span>
+                            <span>Pulsa o presiona Espacio</span>
+                        </div>
+                        <div class="text-center my-auto px-4">
+                            <p class="text-lg sm:text-xl font-bold text-slate-800 leading-relaxed" 
+                               x-text="flashcards[currentCardIndex]?.question"></p>
+                        </div>
+                        <div class="text-center text-xs text-slate-400 font-medium">
+                            Toca para ver la respuesta
+                        </div>
+                    </div>
+
+                    <!-- Reverso -->
+                    <div class="absolute inset-0 bg-gradient-to-br from-[#0083B0] to-[#005C7B] text-white rounded-3xl p-8 flex flex-col justify-between rotate-y-180 backface-hidden shadow-2xl">
+                        <div class="flex items-center justify-between text-xs text-sky-200 font-semibold">
+                            <span>RESPUESTA</span>
+                            <span>Califica tu retención abajo</span>
+                        </div>
+                        <div class="text-center my-auto px-4 overflow-y-auto">
+                            <p class="text-base sm:text-lg font-medium leading-relaxed" 
+                               x-text="flashcards[currentCardIndex]?.answer"></p>
+                        </div>
+                        <div class="text-center text-xs text-sky-200">
+                            ¿Qué tan bien recordabas esta respuesta?
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SM-2 Rating Controls -->
+                <div x-show="isFlipped" class="mt-6 grid grid-cols-5 gap-2 max-w-xl mx-auto">
+                    <button @click="rateCard(1)" class="p-3 rounded-2xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 font-bold text-xs flex flex-col items-center">
+                        <span class="text-sm">❌</span>
+                        <span>Olvido (1)</span>
+                    </button>
+                    <button @click="rateCard(2)" class="p-3 rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-bold text-xs flex flex-col items-center">
+                        <span class="text-sm">⚠️</span>
+                        <span>Difícil (2)</span>
+                    </button>
+                    <button @click="rateCard(3)" class="p-3 rounded-2xl bg-sky-50 hover:bg-sky-100 border border-sky-200 text-[#0083B0] font-bold text-xs flex flex-col items-center">
+                        <span class="text-sm">👌</span>
+                        <span>Bien (3)</span>
+                    </button>
+                    <button @click="rateCard(4)" class="p-3 rounded-2xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold text-xs flex flex-col items-center">
+                        <span class="text-sm">✨</span>
+                        <span>Fácil (4)</span>
+                    </button>
+                    <button @click="rateCard(5)" class="p-3 rounded-2xl bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-800 font-bold text-xs flex flex-col items-center">
+                        <span class="text-sm">🏆</span>
+                        <span>Dominado (5)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Completed View -->
+            <div x-show="studyCompleted" class="bg-white rounded-3xl p-8 border border-slate-200 text-center space-y-6 shadow-md max-w-md mx-auto">
+                <div class="w-16 h-16 rounded-3xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto text-3xl">
+                    🎉
+                </div>
+                <div class="space-y-1">
+                    <h3 class="text-2xl font-bold text-slate-800">¡Sesión de Flashcards Completa!</h3>
+                    <p class="text-xs text-slate-500">Tus tarjetas han sido reprogramadas con el algoritmo SM-2 y ¡ganaste 1 fruta para tu Quokka!</p>
+                </div>
+                <div class="flex justify-center gap-3">
+                    <button @click="startStudy(studyDeck)" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs">
+                        Repetir
+                    </button>
+                    <button @click="setTab('dashboard')" class="px-5 py-2.5 bg-[#0083B0] hover:bg-[#007096] text-white font-bold rounded-xl text-xs shadow-sm">
+                        Alimentar a Koko 🍓
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 4. QUIZ ==================== -->
+        <div x-show="currentTab === 'quiz'" x-cloak class="space-y-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-bold text-[#0083B0] uppercase tracking-wider" x-text="quizDeck?.name || 'Mazo'"></span>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Prueba de Opción Múltiple</h2>
+                </div>
+                <div class="flex items-center space-x-3 text-xs font-bold">
+                    <span class="bg-amber-50 text-amber-800 px-3 py-1 rounded-full border border-amber-200" x-text="`Racha: 🔥 ${quizStreak}`"></span>
+                    <span class="text-slate-500" x-text="`${currentQuizIndex + 1} de ${quizQuestions.length}`"></span>
+                </div>
+            </div>
+
+            <div x-show="quizQuestions.length > 0 && !quizCompleted" class="max-w-2xl mx-auto space-y-6">
+                <div class="bg-white p-7 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                    <p class="text-base sm:text-lg font-bold text-slate-800" x-text="quizQuestions[currentQuizIndex]?.question"></p>
+                    
+                    <div class="space-y-2.5 pt-2">
+                        <template x-for="(opt, idx) in quizQuestions[currentQuizIndex]?.options || []" :key="idx">
+                            <button @click="selectQuizOption(idx)"
+                                    :disabled="isOptionSubmitted"
+                                    class="w-full p-4 rounded-2xl border text-left text-sm font-semibold transition-all flex items-center justify-between"
+                                    :class="{
+                                        'border-slate-200 hover:border-[#0083B0] bg-slate-50/50': !isOptionSubmitted,
+                                        'border-emerald-500 bg-emerald-50 text-emerald-900': isOptionSubmitted && idx === quizQuestions[currentQuizIndex]?.correct_index,
+                                        'border-red-400 bg-red-50 text-red-900': isOptionSubmitted && selectedOptionIndex === idx && idx !== quizQuestions[currentQuizIndex]?.correct_index,
+                                        'opacity-50': isOptionSubmitted && idx !== quizQuestions[currentQuizIndex]?.correct_index && selectedOptionIndex !== idx
+                                    }">
+                                <span x-text="opt"></span>
+                                <span x-show="isOptionSubmitted && idx === quizQuestions[currentQuizIndex]?.correct_index">✓</span>
+                            </button>
+                        </template>
+                    </div>
+
+                    <div x-show="isOptionSubmitted" class="pt-4 flex justify-end">
+                        <button @click="nextQuizQuestion()" 
+                                class="px-6 py-3 bg-[#0083B0] hover:bg-[#007096] text-white font-bold rounded-xl text-sm transition-all shadow-md">
+                            <span x-text="currentQuizIndex + 1 < quizQuestions.length ? 'Siguiente Pregunta' : 'Ver Resultados'"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quiz Completed View -->
+            <div x-show="quizCompleted" class="bg-white rounded-3xl p-8 border border-slate-200 text-center space-y-6 shadow-md max-w-md mx-auto">
+                <div class="w-16 h-16 rounded-3xl bg-sky-50 text-[#0083B0] flex items-center justify-center mx-auto text-3xl">
+                    🏆
+                </div>
+                <div class="space-y-1">
+                    <h3 class="text-2xl font-bold text-slate-800">¡Quiz Terminado!</h3>
+                    <p class="text-xs text-slate-500">Puntaje obtenido:</p>
+                    <p class="text-3xl font-extrabold text-[#0083B0]" x-text="`${quizScore} / ${quizQuestions.length}`"></p>
+                </div>
+                <div class="flex justify-center gap-3">
+                    <button @click="startQuiz(quizDeck)" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs">
+                        Reintentar
+                    </button>
+                    <button @click="setTab('dashboard')" class="px-5 py-2.5 bg-[#0083B0] hover:bg-[#007096] text-white font-bold rounded-xl text-xs shadow-sm">
+                        Alimentar a Koko 🍓
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 5. EXAMEN ORAL CON CONTEO (3, 2, 1) ==================== -->
+        <div x-show="currentTab === 'oral'" x-cloak class="space-y-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-bold text-[#0083B0] uppercase tracking-wider" x-text="oralDeck?.name || 'Mazo'"></span>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Simulador de Examen Oral con IA</h2>
+                </div>
+                <div class="text-xs font-bold text-slate-500" x-text="oralQuestions.length ? `Pregunta ${currentOralIndex + 1} de ${oralQuestions.length}` : ''"></div>
+            </div>
+
+            <div x-show="oralQuestions.length > 0 && !oralSessionCompleted" class="max-w-2xl mx-auto space-y-6">
+                <!-- PREGUNTA ORAL -->
+                <div class="bg-white rounded-3xl p-7 border border-slate-200/80 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-[#0083B0] uppercase tracking-wider bg-sky-50 px-3 py-1 rounded-full"
+                              x-text="oralQuestions[currentOralIndex]?.concept || 'Concepto Clave'"></span>
+                        
+                        <button @click="speakQuestionTTS()" 
+                                :disabled="isPlayingTTS"
+                                class="flex items-center space-x-1.5 text-xs font-bold text-slate-600 hover:text-[#0083B0] bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full transition-all">
+                            <i data-lucide="volume-2" class="w-4 h-4" :class="isPlayingTTS ? 'animate-bounce text-[#0083B0]' : ''"></i>
+                            <span x-text="isPlayingTTS ? 'Escuchando...' : 'Escuchar Pregunta'"></span>
+                        </button>
+                    </div>
+
+                    <h3 class="text-lg sm:text-xl font-bold text-slate-800 leading-relaxed" 
+                        x-text="oralQuestions[currentOralIndex]?.question_text"></h3>
+                </div>
+
+                <!-- CUENTA REGRESIVA VISUAL (3, 2, 1) -->
+                <div x-show="isCountingDown" 
+                     class="bg-gradient-to-br from-[#0083B0] to-[#005C7B] text-white rounded-3xl p-10 text-center space-y-3 shadow-xl">
+                    <p class="text-xs font-bold uppercase tracking-widest text-sky-200">Prepárate para responder...</p>
+                    <div class="text-7xl sm:text-8xl font-black countdown-pop-anim text-white py-2" x-text="countdownText"></div>
+                    <p class="text-xs text-sky-100">El micrófono se activará automáticamente al terminar la cuenta.</p>
+                </div>
+
+                <!-- GRABACIÓN DE AUDIO & FORMA DE ONDA -->
+                <div x-show="!isCountingDown" class="bg-white rounded-3xl p-7 border border-slate-200/80 shadow-sm text-center space-y-5">
+                    <!-- Waveform visualizer -->
+                    <div class="relative w-full h-24 bg-slate-50 rounded-2xl border border-slate-100 overflow-hidden flex items-center justify-center">
+                        <canvas id="oralWaveformCanvas" width="500" height="96" class="w-full h-full"></canvas>
+                        <div x-show="!isRecording" class="absolute inset-0 flex items-center justify-center text-xs text-slate-400 font-medium">
+                            El visualizador de ondas se activa al grabar tu respuesta
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div x-show="!isRecording && !isEvaluating && !evaluationResult && !isCountingDown">
+                            <button @click="triggerOralCountdown()" 
+                                    class="px-8 py-4 rounded-2xl bg-gradient-to-r from-[#0083B0] to-[#00B4DB] hover:from-[#007096] hover:to-[#009BBF] text-white font-bold text-sm mx-auto shadow-lg shadow-[#0083B0]/30 transition-all hover:scale-105 active:scale-95 flex items-center justify-center space-x-2">
+                                <i data-lucide="mic" class="w-5 h-5"></i>
+                                <span>Comenzar Respuesta Oral (Con Conteo)</span>
+                            </button>
+                        </div>
+
+                        <!-- Estado Grabando -->
+                        <div x-show="isRecording" class="space-y-4">
+                            <div class="inline-flex items-center space-x-2 bg-sky-50 text-[#0083B0] px-5 py-2.5 rounded-full border border-sky-200 font-mono text-sm font-bold">
+                                <span class="w-3 h-3 rounded-full bg-red-500 animate-ping"></span>
+                                <span x-text="recordingTime"></span>
+                                <span class="text-xs font-sans font-semibold text-slate-700">🎤 Micrófono activo: habla ahora</span>
+                            </div>
+
+                            <div class="flex items-center justify-center space-x-4">
+                                <button @click="stopOralRecordingAndEvaluate()" 
+                                        class="recording-pulse-active px-8 py-4 bg-[#0083B0] hover:bg-[#007096] text-white font-bold rounded-2xl shadow-xl shadow-[#0083B0]/30 text-sm flex items-center space-x-2 transition-all">
+                                    <i data-lucide="square" class="w-4 h-4 fill-current"></i>
+                                    <span>Terminar Respuesta y Evaluar</span>
+                                </button>
+                                <button @click="cancelOralRecording()" 
+                                        class="px-4 py-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-2xl text-sm transition-all"
+                                        title="Cancelar">
+                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Estado Evaluando con IA -->
+                        <div x-show="isEvaluating" class="py-6 space-y-4">
+                            <div class="w-12 h-12 border-4 border-[#0083B0]/30 border-t-[#0083B0] rounded-full animate-spin mx-auto"></div>
+                            <div class="space-y-1">
+                                <p class="text-base font-bold text-slate-800" x-text="evalStepMessage"></p>
+                                <p class="text-xs text-slate-400">Analizando muletillas, pausas, estructura y dominio técnico...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EVALUACIÓN DE GEMINI IA -->
+                <div x-show="evaluationResult" x-transition class="bg-white rounded-3xl p-7 border border-slate-200 shadow-xl space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                        <div>
+                            <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                                Evaluación Completada
+                            </span>
+                            <h3 class="text-lg font-bold text-slate-800 mt-1">Resultados de tu Explicación</h3>
+                        </div>
+
+                        <div class="flex items-center space-x-3">
+                            <div class="text-center bg-[#0083B0]/10 border border-[#0083B0]/20 px-4 py-2 rounded-2xl">
+                                <span class="block text-[10px] font-bold text-[#0083B0] uppercase">Puntaje</span>
+                                <span class="text-2xl font-extrabold text-[#0083B0]" x-text="`${evaluationResult?.score}/100`"></span>
+                            </div>
+                            <div class="text-center bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-2xl">
+                                <span class="block text-[10px] font-bold text-emerald-600 uppercase">Claridad</span>
+                                <span class="text-2xl font-extrabold text-emerald-700" x-text="`${evaluationResult?.clarity_score}/100`"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Muletillas & Pausas -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl text-xs">
+                        <div class="space-y-1">
+                            <span class="text-slate-500 font-semibold block">⚡ Muletillas Detectadas:</span>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-lg font-bold text-slate-800" x-text="evaluationResult?.filler_word_count"></span>
+                                <div class="flex flex-wrap gap-1">
+                                    <template x-for="word in evaluationResult?.detected_filler_words || []" :key="word">
+                                        <span class="bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.5 rounded text-[10px] font-bold" x-text="`“${word}”`"></span>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <span class="text-slate-500 font-semibold block">⏸️ Pausas o Vacilaciones:</span>
+                            <span class="text-lg font-bold text-slate-800" x-text="evaluationResult?.pause_count"></span>
+                        </div>
+                    </div>
+
+                    <!-- Transcripción -->
+                    <div class="space-y-2">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Transcripción Literal:</span>
+                        <div class="bg-slate-50/80 border border-slate-200 rounded-2xl p-4 text-xs sm:text-sm text-slate-800 leading-relaxed font-normal"
+                             x-html="evaluationResult?.highlighted_transcript || evaluationResult?.transcript"></div>
+                    </div>
+
+                    <!-- Puntos Clave -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="bg-emerald-50/50 border border-emerald-200/80 rounded-2xl p-4 space-y-2">
+                            <span class="text-xs font-bold text-emerald-800 flex items-center space-x-1.5">
+                                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+                                <span>Puntos Clave Mencionados</span>
+                            </span>
+                            <ul class="text-xs text-emerald-950 space-y-1.5 pl-1">
+                                <template x-for="kp in evaluationResult?.key_points_mentioned || []" :key="kp">
+                                    <li class="flex items-start space-x-1.5">
+                                        <span class="text-emerald-500 font-bold">•</span>
+                                        <span x-text="kp"></span>
+                                    </li>
+                                </template>
+                            </ul>
+                        </div>
+
+                        <div class="bg-amber-50/50 border border-amber-200/80 rounded-2xl p-4 space-y-2">
+                            <span class="text-xs font-bold text-amber-800 flex items-center space-x-1.5">
+                                <i data-lucide="alert-circle" class="w-4 h-4 text-amber-600"></i>
+                                <span>Puntos Faltantes</span>
+                            </span>
+                            <ul class="text-xs text-amber-950 space-y-1.5 pl-1">
+                                <template x-for="kp in evaluationResult?.key_points_missed || []" :key="kp">
+                                    <li class="flex items-start space-x-1.5">
+                                        <span class="text-amber-500 font-bold">•</span>
+                                        <span x-text="kp"></span>
+                                    </li>
+                                </template>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Retroalimentación Pedagógica -->
+                    <div class="bg-[#0083B0]/10 border border-[#0083B0]/20 rounded-2xl p-4 space-y-1.5">
+                        <span class="text-xs font-bold text-[#0083B0] flex items-center space-x-1.5">
+                            <i data-lucide="message-square" class="w-4 h-4"></i>
+                            <span>Retroalimentación del Tutor IA</span>
+                        </span>
+                        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium"
+                           x-text="evaluationResult?.feedback"></p>
+                    </div>
+
+                    <!-- Next button -->
+                    <div class="pt-2">
+                        <button @click="nextOralQuestion()" 
+                                class="w-full py-4 bg-[#0083B0] hover:bg-[#007096] text-white font-bold rounded-2xl transition-all shadow-md flex items-center justify-center space-x-2 text-sm">
+                            <span x-text="currentOralIndex + 1 < oralQuestions.length ? 'Siguiente Pregunta Oral (Con Conteo)' : 'Finalizar Examen y Recoger Frutas 🍓'"></span>
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen de Sesión Oral -->
+            <div x-show="oralSessionCompleted" class="bg-white rounded-3xl p-8 border border-slate-200 text-center space-y-6 shadow-md max-w-md mx-auto">
+                <div class="w-16 h-16 rounded-3xl bg-[#0083B0]/10 text-[#0083B0] flex items-center justify-center mx-auto text-3xl">
+                    🎙️
+                </div>
+                <div class="space-y-1">
+                    <h3 class="text-2xl font-bold text-slate-800">¡Examen Oral Finalizado!</h3>
+                    <p class="text-xs text-slate-500">Ganaste <b>2 frutas 🍓🍓</b> para tu Quokka.</p>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 bg-slate-50 p-4 rounded-2xl text-center">
+                    <div>
+                        <span class="block text-slate-400 text-xs font-semibold">Puntaje</span>
+                        <span class="font-extrabold text-[#0083B0] text-xl" x-text="`${oralSessionSummary?.overall_score || 0} pts`"></span>
+                    </div>
+                    <div>
+                        <span class="block text-slate-400 text-xs font-semibold">Claridad</span>
+                        <span class="font-extrabold text-emerald-600 text-xl" x-text="`${oralSessionSummary?.avg_clarity || 0} pts`"></span>
+                    </div>
+                    <div>
+                        <span class="block text-slate-400 text-xs font-semibold">Muletillas</span>
+                        <span class="font-extrabold text-amber-600 text-xl" x-text="oralSessionSummary?.total_fillers || 0"></span>
+                    </div>
+                </div>
+
+                <div class="flex justify-center gap-3">
+                    <button @click="startOralExam(oralDeck)" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs">
+                        Repetir
+                    </button>
+                    <button @click="setTab('dashboard')" class="px-5 py-2.5 bg-[#0083B0] hover:bg-[#007096] text-white font-bold rounded-xl text-xs shadow-sm">
+                        Alimentar a Koko 🍓
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 6. FORO ESTILO RED SOCIAL (TIPO INSTAGRAM) ==================== -->
+        <div x-show="currentTab === 'forum'" x-cloak class="space-y-6 max-w-2xl mx-auto">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Feed de Comunidad</h2>
+                    <p class="text-xs text-slate-500">Apuntes y mazos públicos compartidos por estudiantes universitarios.</p>
+                </div>
+
+                <button @click="forumModalOpen = true" 
+                        class="bg-[#0083B0] hover:bg-[#007096] text-white font-bold px-4 py-2 rounded-xl text-xs transition-all flex items-center space-x-1.5 shadow-sm">
+                    <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+                    <span>Publicar</span>
+                </button>
+            </div>
+
+            <!-- Posts Stream (Instagram Cards) -->
+            <div class="space-y-6">
+                <template x-for="post in forumPosts" :key="post.id">
+                    <div class="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                        <!-- Instagram Post Header: User, @handle, university -->
+                        <div class="p-4 sm:p-5 flex items-center justify-between border-b border-slate-100">
+                            <div class="flex items-center space-x-3 cursor-pointer" @click="viewUserProfile(post.author_id)">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-[#0083B0] to-[#00B4DB] text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                                    <span x-text="(post.author_name || 'U')[0].toUpperCase()"></span>
+                                </div>
+                                <div>
+                                    <div class="flex items-center space-x-1.5">
+                                        <h4 class="font-bold text-slate-800 text-sm hover:underline" x-text="post.author_name"></h4>
+                                        <span class="text-xs text-[#0083B0] font-semibold" x-text="`@${post.author_username}`"></span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-400" x-text="`${post.author_university || 'Universidad'} • ${post.author_career || ''}`"></p>
+                                </div>
+                            </div>
+
+                            <span class="text-[10px] font-bold bg-[#0083B0]/10 text-[#0083B0] px-2.5 py-1 rounded-full uppercase"
+                                  x-text="post.subject || 'General'"></span>
+                        </div>
+
+                        <!-- Post Body / Content -->
+                        <div class="p-5 space-y-3">
+                            <h3 class="font-bold text-slate-800 text-base" x-text="post.title"></h3>
+                            <p class="text-xs text-slate-600 leading-relaxed" x-text="post.description"></p>
+                            
+                            <!-- Deck Info Preview Badge -->
+                            <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 flex items-center justify-between text-xs">
+                                <div class="space-y-0.5">
+                                    <span class="font-bold text-slate-800 block" x-text="post.deck_name"></span>
+                                    <span class="text-slate-400 text-[11px]" x-text="`${post.flashcards_count || 0} cards • ${post.quiz_count || 0} quiz • ${post.oral_count || 0} oral`"></span>
+                                </div>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800" 
+                                      x-text="`Dificultad: ${post.deck_difficulty || 'Medio'}`"></span>
+                            </div>
+                        </div>
+
+                        <!-- Actions Bar (Like, Comment, Clone Deck) -->
+                        <div class="px-5 py-3 border-t border-slate-100 flex items-center justify-between">
+                            <div class="flex items-center space-x-4">
+                                <!-- Like Heart Button -->
+                                <button @click="toggleLikePost(post)" 
+                                        class="flex items-center space-x-1.5 text-xs font-semibold transition-all group"
+                                        :class="post.user_has_liked ? 'text-red-500 font-bold heart-liked' : 'text-slate-500 hover:text-red-500'">
+                                    <svg viewBox="0 0 24 24" class="w-5 h-5 transition-transform group-hover:scale-110" 
+                                         :fill="post.user_has_liked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
+                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                    </svg>
+                                    <span x-text="post.likes_count || 0"></span>
+                                </button>
+
+                                <!-- Comment count indicator -->
+                                <div class="flex items-center space-x-1.5 text-xs text-slate-500">
+                                    <i data-lucide="message-circle" class="w-5 h-5"></i>
+                                    <span x-text="post.comments_count || (post.comments ? post.comments.length : 0)"></span>
+                                </div>
+                            </div>
+
+                            <!-- CLONE DECK TO MY LIBRARY (NUEVO) -->
+                            <button @click="cloneForumDeck(post)" 
+                                    class="py-2 px-3.5 bg-[#0083B0]/10 hover:bg-[#0083B0] hover:text-white text-[#0083B0] font-bold rounded-xl text-xs transition-all flex items-center space-x-1.5 shadow-sm">
+                                <i data-lucide="download-cloud" class="w-3.5 h-3.5"></i>
+                                <span>Guardar en mi Biblioteca</span>
+                            </button>
+                        </div>
+
+                        <!-- Comments Section (Instagram Style) -->
+                        <div class="bg-slate-50/70 p-4 border-t border-slate-100 space-y-3">
+                            <!-- Comments List -->
+                            <div class="space-y-2">
+                                <template x-for="c in post.comments || []" :key="c.id">
+                                    <div class="text-xs space-x-1.5">
+                                        <span class="font-bold text-slate-800 cursor-pointer hover:underline"
+                                              @click="viewUserProfile(c.commenter_id)"
+                                              x-text="`@${c.commenter_username || 'usuario'}`"></span>
+                                        <span class="text-slate-600" x-text="c.comment_text"></span>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Comment Input -->
+                            <div class="flex items-center space-x-2 pt-1">
+                                <input type="text" 
+                                       x-model="newComments[post.id]"
+                                       @keyup.enter="submitComment(post)"
+                                       placeholder="Añade un comentario..." 
+                                       class="flex-1 px-3 py-2 bg-white rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
+                                <button @click="submitComment(post)" 
+                                        class="text-xs font-bold text-[#0083B0] hover:text-[#007096] px-2 py-1">
+                                    Publicar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- ==================== 7. DASHBOARD & INTERACTIVO QUOKKA ==================== -->
+        <div x-show="currentTab === 'dashboard'" x-cloak class="space-y-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Progreso & Tu Mascota</h2>
+                    <p class="text-sm text-slate-500">Monitorea tus métricas de estudio y cuida a tu compañero Quokka.</p>
+                </div>
+            </div>
+
+            <!-- INTERACTIVE QUOKKA FEEDING WIDGET (REQUISITO CRÍTICO) -->
+            <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-lg relative overflow-hidden">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                    <!-- Quokka Mascot Avatar with Eating Animation -->
+                    <div class="flex flex-col items-center justify-center relative">
+                        <!-- Floating hearts when eating -->
+                        <div x-show="quokkaEating" class="absolute -top-4 text-2xl floating-heart pointer-events-none">
+                            🍓 ❤️ ✨
+                        </div>
+
+                        <div class="w-44 h-44 sm:w-52 sm:h-52 rounded-full bg-gradient-to-tr from-sky-50 to-amber-50 border-4 border-white shadow-xl flex items-center justify-center relative cursor-pointer"
+                             :class="{ 'quokka-eating-anim': quokkaEating }"
+                             @click="feedQuokka()">
+                            <img src="/static/img/mascota.png" alt="Mascota Kua" class="w-40 h-40 object-contain mx-auto">
+                        </div>
+                        <span class="mt-2 text-xs font-bold text-slate-700">Koko el Quokka</span>
+                    </div>
+
+                    <!-- Quokka Stats & Happiness Bar -->
+                    <div class="md:col-span-2 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-800">Compañero de Estudio</h3>
+                                <p class="text-xs text-slate-500 font-medium" x-text="quokkaStatus.mood"></p>
+                            </div>
+                            <span class="text-xs font-bold bg-[#0083B0]/10 text-[#0083B0] px-3 py-1 rounded-full">
+                                Felicidad: <span x-text="`${quokkaStatus.quokka_happiness}%`"></span>
+                            </span>
+                        </div>
+
+                        <!-- Happiness Progress Bar -->
+                        <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                            <div class="bg-gradient-to-r from-[#0083B0] to-[#00B4DB] h-full rounded-full transition-all duration-500"
+                                 :style="`width: ${quokkaStatus.quokka_happiness}%`"></div>
+                        </div>
+
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <div class="flex items-center space-x-2 text-xs font-semibold text-slate-700">
+                                <span class="text-2xl">🍓</span>
+                                <div>
+                                    <span class="font-extrabold text-[#0083B0] text-base" x-text="quokkaStatus.fruits_count || 0"></span>
+                                    <span>frutas disponibles</span>
+                                    <p class="text-[11px] text-slate-400 font-normal">Gana frutas completando flashcards, quizzes o exámenes orales.</p>
+                                </div>
+                            </div>
+
+                            <!-- BOTÓN ALIMENTAR QUOKKA -->
+                            <button @click="feedQuokka()" 
+                                    :disabled="(quokkaStatus.fruits_count || 0) <= 0"
+                                    class="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-[#0083B0] to-[#00B4DB] hover:from-[#007096] hover:to-[#009BBF] disabled:opacity-50 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-[#0083B0]/25 flex items-center justify-center space-x-1.5 whitespace-nowrap active:scale-95">
+                                <span>Alimentar a Koko</span>
+                                <span>🍓</span>
+                            </button>
+                        </div>
+
+                        <p x-show="quokkaFeedSuccess" class="text-xs text-emerald-600 font-bold" x-text="quokkaFeedSuccess"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metric Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm space-y-1">
+                    <span class="text-xs font-semibold text-slate-400 uppercase">Tarjetas Dominadas</span>
+                    <div class="text-2xl font-extrabold text-slate-800" x-text="dashboardStats?.mastered_cards || 0"></div>
+                    <span class="text-[11px] text-[#0083B0] font-medium">Algoritmo SM-2 activo</span>
+                </div>
+
+                <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm space-y-1">
+                    <span class="text-xs font-semibold text-slate-400 uppercase">Promedio Oral</span>
+                    <div class="text-2xl font-extrabold text-[#0083B0]" x-text="`${dashboardStats?.avg_oral_score || 0} pts`"></div>
+                    <span class="text-[11px] text-slate-400 font-medium" x-text="`${dashboardStats?.total_oral_sessions || 0} sesiones realizadas`"></span>
+                </div>
+
+                <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm space-y-1">
+                    <span class="text-xs font-semibold text-slate-400 uppercase">Claridad Media</span>
+                    <div class="text-2xl font-extrabold text-emerald-600" x-text="`${dashboardStats?.avg_clarity || 0} pts`"></div>
+                    <span class="text-[11px] text-emerald-600 font-medium">Estructura y coherencia</span>
+                </div>
+
+                <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm space-y-1">
+                    <span class="text-xs font-semibold text-slate-400 uppercase">Prom. Muletillas</span>
+                    <div class="text-2xl font-extrabold text-amber-600" x-text="dashboardStats?.avg_fillers_per_ans || 0"></div>
+                    <span class="text-[11px] text-slate-400 font-medium">Por cada respuesta</span>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-slate-800 text-base">Evolución de Rendimiento Oral</h3>
+                        <span class="text-xs text-slate-400 font-medium">Puntaje vs Claridad</span>
+                    </div>
+                    <div class="h-64 w-full">
+                        <canvas id="oralPerformanceChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-slate-800 text-base">Perfil de Habilidades</h3>
+                        <span class="text-xs text-slate-400 font-medium">5 competencias</span>
+                    </div>
+                    <div class="h-64 w-full">
+                        <canvas id="skillsRadarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SM-2 Distribution & Recent Answers -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+                    <h3 class="font-bold text-slate-800 text-base">Estado de Flashcards (SM-2)</h3>
+                    <div class="h-64 w-full flex items-center justify-center">
+                        <canvas id="sm2DistributionChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+                    <h3 class="font-bold text-slate-800 text-base">Respuestas Orales Recientes</h3>
+                    <div class="space-y-3">
+                        <template x-for="ans in dashboardStats?.recent_answers || []" :key="ans.id">
+                            <div class="p-4 rounded-2xl border border-slate-100 hover:border-[#0083B0]/30 bg-slate-50/60 hover:bg-white transition-all space-y-2 cursor-pointer"
+                                 @click="openAnswerDetail(ans)">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div>
+                                        <span class="text-[10px] font-bold text-[#0083B0] bg-[#0083B0]/10 px-2 py-0.5 rounded-full" x-text="ans.deck_name"></span>
+                                        <p class="font-semibold text-slate-800 text-sm mt-1" x-text="ans.question_text"></p>
+                                    </div>
+                                    <div class="text-right flex-shrink-0">
+                                        <span class="text-xs font-bold px-2 py-1 rounded-lg"
+                                              :class="ans.score >= 80 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'"
+                                              x-text="`${ans.score} pts`"></span>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-slate-500 line-clamp-1 italic" x-text="`“${ans.transcript}”`"></p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <!-- ==================== VISTA: MI PERFIL ==================== -->
+    <div x-show="currentTab === 'profile'" x-cloak class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 pb-28">
+        <div class="max-w-lg mx-auto space-y-6">
+
+            <!-- Header de Perfil -->
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Mi Perfil</h2>
+                    <p class="text-sm text-slate-500">Actualiza tus datos personales de estudiante.</p>
+                </div>
+                <button @click="setTab('home')"
+                        class="text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-100 transition-all"
+                        title="Volver">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+<!-- Tarjeta de Perfil (Avatar + Nombre) -->
+<div class="relative rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm bg-white mb-6">
+    
+    <!-- Banner Superior -->
+    <div id="profileBanner" class="h-32 sm:h-40 relative p-4 transition-colors duration-300 flex justify-end items-start bg-[#0083B0]">
+        <label title="Cambiar color de fondo del banner" class="cursor-pointer bg-white/20 hover:bg-white/30 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-full border border-white/30 transition-all flex items-center space-x-1.5">
+            <i data-lucide="palette" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Color de Banner</span>
+            <input type="color" id="bannerColorPicker" value="#0083B0" class="opacity-0 absolute w-0 h-0 pointer-events-none" onchange="updateBannerColor(this.value)">
+        </label>
+    </div>
+
+    <!-- Contenedor de Foto + Nombre -->
+    <div class="px-6 sm:px-8 pb-6 pt-0 relative flex flex-col sm:flex-row items-start sm:items-end justify-between -mt-12 sm:-mt-14 gap-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+            
+            <!-- Círculo del Avatar -->
+            <div class="relative group w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-tr from-[#0083B0] to-[#00B4DB] text-white flex items-center justify-center text-3xl font-black shadow-lg ring-4 ring-white overflow-hidden shrink-0">
+                
+                <template x-if="profileAvatarUrl">
+                    <img :src="profileAvatarUrl" alt="Foto de perfil" class="w-full h-full object-cover">
+                </template>
+                <template x-if="!profileAvatarUrl">
+                    <span x-text="(currentUser.display_name || 'U')[0].toUpperCase()"></span>
+                </template>
+
+                <label title="Cambiar foto de perfil" class="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white text-[11px] font-bold space-y-1">
+                    <i data-lucide="camera" class="w-5 h-5"></i>
+                    <span>Cambiar</span>
+                    <input type="file" accept="image/*" class="hidden" onchange="previewProfileAvatar(event)">
+                </label>
+            </div>
+
+            <!-- Nombre y Universidad -->
+            <div class="space-y-1 mb-1">
+                <h3 class="font-bold text-slate-800 text-xl sm:text-2xl leading-tight" x-text="currentUser.display_name || 'Nombre del estudiante'"></h3>
+                <p class="text-xs sm:text-sm text-slate-500 font-medium" x-text="currentUser.university || 'Universidad no configurada'"></p>
+            </div>
+
+        </div>
+    </div>
+</div>
+            <!-- Formulario de Edición -->
+            <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-5">
+                <div class="flex items-center space-x-2 text-[#0083B0]">
+                    <i data-lucide="user-pen" class="w-5 h-5"></i>
+                    <h4 class="font-bold text-slate-800 text-base">Información Personal</h4>
+                </div>
+
+                <!-- Nombre -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Nombre Completo</label>
+                    <input type="text" x-model="profileEditName"
+                           placeholder="Tu nombre completo"
+                           class="w-full px-4 py-3 bg-slate-50 rounded-2xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#0083B0] focus:border-transparent transition-all">
+                </div>
+
+                <!-- Handle (solo lectura) -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Usuario (@handle)</label>
+                    <div class="w-full px-4 py-3 bg-slate-100 rounded-2xl border border-slate-200 text-sm font-medium text-slate-500 flex items-center space-x-2">
+                        <i data-lucide="at-sign" class="w-4 h-4 text-slate-400"></i>
+                        <span x-text="currentUser.username || 'usuario'"></span>
+                        <span class="text-[10px] text-slate-400 ml-auto font-bold uppercase tracking-wide">No editable</span>
+                    </div>
+                </div>
+
+                <!-- Correo -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Correo Electrónico</label>
+                    <input type="email" x-model="profileEditEmail"
+                           placeholder="tu@correo.edu"
+                           class="w-full px-4 py-3 bg-slate-50 rounded-2xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#0083B0] focus:border-transparent transition-all">
+                </div>
+
+                <!-- Universidad -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Universidad / Institución</label>
+                    <input type="text" x-model="profileEditUniversity"
+                           placeholder="Ej: Universidad Nacional"
+                           class="w-full px-4 py-3 bg-slate-50 rounded-2xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#0083B0] focus:border-transparent transition-all">
+                </div>
+
+                <!-- Carrera y Semestre -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Carrera</label>
+                        <input type="text" x-model="profileEditCareer"
+                               placeholder="Ej: Ing. Sistemas"
+                               class="w-full px-4 py-3 bg-slate-50 rounded-2xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#0083B0] focus:border-transparent transition-all">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Semestre</label>
+                        <input type="text" x-model="profileEditSemester"
+                               placeholder="Ej: 7mo Semestre"
+                               class="w-full px-4 py-3 bg-slate-50 rounded-2xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#0083B0] focus:border-transparent transition-all">
+                    </div>
+                </div>
+
+                <!-- Bio -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Biografía / Descripción</label>
+                    <textarea x-model="profileEditBio" rows="3"
+                              placeholder="Cuéntale a la comunidad sobre ti..."
+                              class="w-full px-4 py-3 bg-slate-50 rounded-2xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#0083B0] focus:border-transparent transition-all resize-none"></textarea>
+                </div>
+
+                <!-- Botón Guardar -->
+                <button @click="updateProfile()"
+                        :disabled="profileSaving"
+                        class="w-full py-3.5 bg-[#0083B0] hover:bg-[#007096] disabled:opacity-60 text-white font-bold rounded-2xl text-sm transition-all shadow-md shadow-[#0083B0]/20 flex items-center justify-center space-x-2">
+                    <span x-show="profileSaving" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+                    <i x-show="!profileSaving" data-lucide="save" class="w-4 h-4"></i>
+                    <span x-text="profileSaving ? 'Guardando...' : 'Guardar Cambios'"></span>
+                </button>
+            </div>
+
+            <!-- Stats rápidos -->
+            <div class="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+                <h4 class="font-bold text-slate-700 text-sm mb-3 flex items-center space-x-2">
+                    <i data-lucide="star" class="w-4 h-4 text-amber-500"></i>
+                    <span>Resumen de Actividad</span>
+                </h4>
+                <div class="grid grid-cols-2 gap-3 text-center">
+                    <div class="bg-amber-50 rounded-2xl p-3">
+                        <span class="block text-2xl font-extrabold text-amber-600" x-text="currentUser.fruits_count || 0"></span>
+                        <span class="text-xs text-amber-700 font-semibold">🍓 Frutas Disponibles</span>
+                    </div>
+                    <div class="bg-[#0083B0]/10 rounded-2xl p-3">
+                        <span class="block text-2xl font-extrabold text-[#0083B0]" x-text="`${currentUser.quokka_happiness || 0}%`"></span>
+                        <span class="text-xs text-[#0083B0] font-semibold">😊 Felicidad de Koko</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botón Cerrar Sesión -->
+            <div class="pb-4">
+                <button @click="logout()"
+                        class="w-full py-3.5 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-2xl text-sm border border-red-200 transition-all flex items-center justify-center space-x-2">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                    <span>Cerrar Sesión</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+    </div>
+
+    </main>
+    </div>
+
+    <!-- FIXED BOTTOM NAVIGATION BAR IN CELESTE MARINO -->
+    <!-- Barra de Navegación Vertical (Izquierda) -->
+<nav class="fixed left-0 top-0 h-screen w-24 bg-white border-r border-slate-200 flex flex-col items-center pt-20 pb-4 space-y-4 z-50 shadow-sm overflow-y-auto" style="scrollbar-width: none; -ms-overflow-style: none;">
+    <!-- Aquí van tus botones. Mantén los que ya tenías -->
+    <button @click="setTab('home')" class="flex flex-col items-center text-slate-500 hover:text-[#0083B0] transition-colors">
+        <i data-lucide="home" class="w-6 h-6 mb-1"></i>
+        <span class="text-[10px] font-bold">Inicio</span>
+    </button>
+
+    <button @click="setTab('profile')" class="flex flex-col items-center text-[#0083B0] transition-colors mt-auto">
+        <i data-lucide="user" class="w-6 h-6 mb-1"></i>
+        <span class="text-[10px] font-bold">Perfil</span>
+    </button>
+    
+    <button @click="setTab('library')" class="flex flex-col items-center text-slate-500 hover:text-[#0083B0] transition-colors">
+        <i data-lucide="library" class="w-6 h-6 mb-1"></i>
+        <span class="text-[10px] font-bold">Biblioteca</span>
+    </button>
+    
+    <button @click="setTab('study')" class="flex flex-col items-center text-slate-500 hover:text-[#0083B0] transition-colors">
+        <i data-lucide="layers" class="w-6 h-6 mb-1"></i>
+        <span class="text-[10px] font-bold">Cards</span>
+    </button>
+
+    <button @click="setTab('quiz')" class="flex flex-col items-center text-slate-500 hover:text-[#0083B0] transition-colors">
+        <i data-lucide="help-circle" class="w-6 h-6 mb-1"></i>
+        <span class="text-[10px] font-bold">Quiz</span>
+    </button>
+
+    <button @click="setTab('oral')" class="flex flex-col items-center text-slate-500 hover:text-[#0083B0] transition-colors">
+        <i data-lucide="mic" class="w-6 h-6 mb-1"></i>
+        <span class="text-[10px] font-bold">Oral IA</span>
+    </button>
+
+    <button @click="setTab('forum')" class="flex flex-col items-center text-slate-500 hover:text-[#0083B0] transition-colors">
+        <i data-lucide="users" class="w-6 h-6 mb-1"></i>
+        <span class="text-[10px] font-bold">Foro</span>
+    </button>
+
+    <button @click="setTab('dashboard')" class="flex flex-col items-center text-slate-500 hover:text-[#0083B0] transition-colors">
+        <i data-lucide="bar-chart-2" class="w-6 h-6 mb-1"></i>
+        <span class="text-[10px] font-bold">Progreso</span>
+    </button>
+
+    <button @click="logout()" class="flex flex-col items-center text-red-400 hover:text-red-600 transition-colors">
+        <i data-lucide="log-out" class="w-6 h-6 mb-1"></i>
+        <span class="text-[10px] font-bold text-center leading-tight">Cerrar<br>Sesión</span>
+    </button>
+
+
+</nav>
+
+    <!-- ==================== MODAL: CREAR MAZO CON PERSONALIZACIÓN DE ESTUDIO ==================== -->
+    <div x-show="uploadModalOpen" x-cloak 
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+         @click.self="uploadModalOpen = false">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-[#0083B0]/10 text-[#0083B0] flex items-center justify-center">
+                        <i data-lucide="sparkles" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800">Crear Mazo en Kua</h3>
+                </div>
+                <button @click="uploadModalOpen = false" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-2xl text-xs font-semibold">
+                <button @click="uploadMode = 'file'" 
+                        class="py-2.5 rounded-xl transition-all"
+                        :class="uploadMode === 'file' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'">
+                    Subir PDF / TXT
+                </button>
+                <button @click="uploadMode = 'text'" 
+                        class="py-2.5 rounded-xl transition-all"
+                        :class="uploadMode === 'text' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'">
+                    Pegar Texto
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-700">Nombre del Mazo</label>
+                    <input type="text" x-model="uploadDeckName" placeholder="Ej: Redes: Modelo OSI"
+                           class="w-full px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-700">Materia o Asignatura</label>
+                    <input type="text" x-model="customSubject" placeholder="Ej: Redes y Telecomunicaciones"
+                           class="w-full px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
+                </div>
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-700">Carpeta de materia</label>
+                <select x-model="newDeckFolderId" class="w-full px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
+                    <option value="">Sin carpeta</option>
+                    <template x-for="folder in folders" :key="folder.id"><option :value="String(folder.id)" x-text="folder.name"></option></template>
+                </select>
+            </div>
+
+            <!-- CONTROLES DE PERSONALIZACIÓN DE ESTUDIO (REQUISITO CRÍTICO) -->
+            <div class="bg-sky-50/60 border border-sky-100 rounded-2xl p-4 space-y-3">
+                <div class="flex items-center space-x-1.5 text-xs font-bold text-[#0083B0]">
+                    <i data-lucide="sliders" class="w-4 h-4"></i>
+                    <span>Personalización de Preguntas y Dificultad</span>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="text-[11px] font-semibold text-slate-600 block mb-1">Dificultad</label>
+                        <select x-model="customDifficulty" class="w-full px-2 py-2 bg-white rounded-xl border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none">
+                            <option value="Fácil">Fácil</option>
+                            <option value="Medio">Medio</option>
+                            <option value="Difícil">Difícil</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-semibold text-slate-600 block mb-1">Flashcards</label>
+                        <input type="number" min="5" max="30" x-model.number="customFlashcardsCount"
+                               class="w-full px-2 py-2 bg-white rounded-xl border border-slate-200 text-xs font-bold text-slate-700 text-center focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-semibold text-slate-600 block mb-1">Preg. Quiz</label>
+                        <input type="number" min="3" max="15" x-model.number="customQuizCount"
+                               class="w-full px-2 py-2 bg-white rounded-xl border border-slate-200 text-xs font-bold text-slate-700 text-center focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Toggle para compartir en Foro -->
+                <label class="flex items-center space-x-2 cursor-pointer pt-1">
+                    <input type="checkbox" x-model="customIsPublic" class="w-4 h-4 rounded text-[#0083B0] focus:ring-[#0083B0]">
+                    <span class="text-xs font-semibold text-slate-700">Publicar también en el Foro de Comunidad</span>
+                </label>
+            </div>
+
+            <div x-show="uploadMode === 'file'" class="space-y-2">
+                <div class="border-2 border-dashed border-slate-200 hover:border-[#0083B0] rounded-2xl p-5 text-center cursor-pointer bg-slate-50/50"
+                     @click="document.getElementById('deckFileInput').click()">
+                    <i data-lucide="file-up" class="w-7 h-7 mx-auto text-[#0083B0] mb-1"></i>
+                    <p class="text-xs font-semibold text-slate-700" x-text="uploadFileName ? uploadFileName : 'Haz clic para seleccionar PDF o TXT'"></p>
+                </div>
+                <input type="file" id="deckFileInput" accept=".pdf,.txt" class="hidden" @change="handleFileSelected($event)">
+            </div>
+
+            <div x-show="uploadMode === 'text'" class="space-y-2">
+                <textarea x-model="uploadText" rows="4" placeholder="Pega aquí el contenido de tus apuntes o diapositivas..."
+                          class="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs font-normal focus:outline-none focus:ring-2 focus:ring-[#0083B0]"></textarea>
+            </div>
+
+            <div x-show="isGeneratingDeck" class="bg-sky-50 border border-sky-200 rounded-2xl p-4 text-center space-y-2">
+                <div class="w-6 h-6 border-2 border-sky-300 border-t-[#0083B0] rounded-full animate-spin mx-auto"></div>
+                <p class="text-xs font-bold text-[#0083B0]" x-text="generationMessage"></p>
+            </div>
+
+            <div class="flex items-center space-x-3 pt-2">
+                <button @click="uploadModalOpen = false" class="w-1/2 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition-all">
+                    Cancelar
+                </button>
+                <button @click="generateDeck()" 
+                        :disabled="isGeneratingDeck"
+                        class="w-1/2 py-3 bg-[#0083B0] hover:bg-[#007096] text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-[#0083B0]/20 flex items-center justify-center space-x-1.5">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+                    <span>Generar con IA</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: PUBLICAR EN EL FORO ==================== -->
+    <div x-show="forumModalOpen" x-cloak 
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+         @click.self="forumModalOpen = false">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-4 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-[#0083B0]/10 text-[#0083B0] flex items-center justify-center">
+                        <i data-lucide="share-2" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800">Publicar Apuntes en el Foro</h3>
+                </div>
+                <button @click="forumModalOpen = false" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-700">Título de la Publicación</label>
+                    <input type="text" x-model="forumTitle" placeholder="Ej: Fisiología: Nefrona y Filtración"
+                           class="w-full px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-700">Materia</label>
+                    <input type="text" x-model="forumSubject" placeholder="Ej: Fisiología Médica"
+                           class="w-full px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
+                </div>
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-700">Descripción o Consejos para la Comunidad</label>
+                <textarea x-model="forumDescription" rows="2" placeholder="Ej: Apuntes clave para el segundo parcial..."
+                          class="w-full p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#0083B0]"></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-2xl text-xs font-semibold">
+                <button @click="forumUploadMode = 'text'" 
+                        class="py-2 rounded-xl transition-all"
+                        :class="forumUploadMode === 'text' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'">
+                    Pegar Texto
+                </button>
+                <button @click="forumUploadMode = 'file'" 
+                        class="py-2 rounded-xl transition-all"
+                        :class="forumUploadMode === 'file' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'">
+                    Subir PDF / TXT
+                </button>
+            </div>
+
+            <div x-show="forumUploadMode === 'text'" class="space-y-1">
+                <textarea x-model="forumText" rows="4" placeholder="Pega el contenido de los apuntes a compartir..."
+                          class="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#0083B0]"></textarea>
+            </div>
+
+            <div x-show="forumUploadMode === 'file'" class="space-y-2">
+                <div class="border-2 border-dashed border-slate-200 hover:border-[#0083B0] rounded-2xl p-4 text-center cursor-pointer bg-slate-50/50"
+                     @click="document.getElementById('forumFileInput').click()">
+                    <i data-lucide="file-text" class="w-6 h-6 mx-auto text-[#0083B0] mb-1"></i>
+                    <p class="text-xs font-semibold text-slate-700" x-text="forumFileName ? forumFileName : 'Seleccionar archivo'"></p>
+                </div>
+                <input type="file" id="forumFileInput" accept=".pdf,.txt" class="hidden" @change="handleForumFileSelected($event)">
+            </div>
+
+            <div x-show="isSubmittingForumPost" class="bg-sky-50 border border-sky-200 rounded-2xl p-3 text-center space-y-1">
+                <div class="w-5 h-5 border-2 border-sky-300 border-t-[#0083B0] rounded-full animate-spin mx-auto"></div>
+                <p class="text-xs font-bold text-[#0083B0]" x-text="forumPostMessage"></p>
+            </div>
+
+            <div class="flex items-center space-x-3 pt-2">
+                <button @click="forumModalOpen = false" class="w-1/2 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition-all">
+                    Cancelar
+                </button>
+                <button @click="submitForumPost()" 
+                        :disabled="isSubmittingForumPost"
+                        class="w-1/2 py-3 bg-[#0083B0] hover:bg-[#007096] text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-[#0083B0]/20 flex items-center justify-center space-x-1.5">
+                    <i data-lucide="share" class="w-4 h-4"></i>
+                    <span>Publicar en Foro</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: AUTENTICACIÓN (LOGIN / REGISTRO) ==================== -->
+    <div x-show="authModalOpen" x-cloak 
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+         @click.self="isAuthenticated && (authModalOpen = false)">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 shadow-2xl border border-slate-100 max-h-[92vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#0083B0] to-[#00B4DB] p-1 flex items-center justify-center text-white">
+                        <img src="/static/img/logo.png" alt="Logo Kua" class="w-10 h-10 object-contain">
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-800">Cuenta Kua</h3>
+                        <p class="text-xs text-slate-400">Accede a tus apuntes y comunidad</p>
+                    </div>
+                </div>
+                <button x-show="isAuthenticated" @click="authModalOpen = false" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Tab Switcher (Login vs Registro) -->
+            <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-2xl text-xs font-semibold">
+                <button @click="authMode = 'login'" 
+                        class="py-2.5 rounded-xl transition-all"
+                        :class="authMode === 'login' ? 'bg-white text-slate-800 shadow-sm font-bold' : 'text-slate-500'">
+                    Iniciar Sesión
+                </button>
+                <button @click="authMode = 'register'" 
+                        class="py-2.5 rounded-xl transition-all"
+                        :class="authMode === 'register' ? 'bg-white text-slate-800 shadow-sm font-bold' : 'text-slate-500'">
+                    Crear Cuenta
+                </button>
+            </div>
+
+            <!-- Error message banner -->
+            <div x-show="authError" class="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-semibold" x-text="authError"></div>
+
+            <!-- TAB 1: INICIAR SESIÓN -->
+            <div x-show="authMode === 'login'" class="space-y-3.5">
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-700">Usuario (@handle) o Correo</label>
+                    <input type="text" x-model="loginIdentifier" placeholder="Ej: estudiante_kua o demo@kua.edu"
+                           class="w-full px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-700">Contraseña</label>
+                    <input type="password" x-model="loginPassword" placeholder="Tu contraseña"
+                           @keyup.enter="login()"
+                           class="w-full px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
+                </div>
+
+                <button @click="login()" 
+                        class="w-full py-3 bg-[#0083B0] hover:bg-[#007096] text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-[#0083B0]/20">
+                    Entrar a Kua
+                </button>
+
+                <!-- Demo Fast Switchers -->
+                <div class="pt-2 border-t border-slate-100 space-y-2">
+                    <span class="text-[11px] font-bold text-slate-400 uppercase block">Cuentas demo de prueba:</span>
+                    <div class="grid grid-cols-3 gap-1.5 text-[11px]">
+                        <button @click="switchDemoUser(1)" class="p-2 bg-slate-50 hover:bg-sky-50 rounded-xl border text-center font-bold text-slate-700">
+                            @estudiante_kua
+                        </button>
+                        <button @click="switchDemoUser(2)" class="p-2 bg-slate-50 hover:bg-sky-50 rounded-xl border text-center font-bold text-slate-700">
+                            @sofi_med
+                        </button>
+                        <button @click="switchDemoUser(3)" class="p-2 bg-slate-50 hover:bg-sky-50 rounded-xl border text-center font-bold text-slate-700">
+                            @carlos_dev
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: REGISTRO (CON TODOS LOS CAMPOS REQUERIDOS) -->
+            <div x-show="authMode === 'register'" class="space-y-3">
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-700">Nombre</label>
+                        <input type="text" x-model="regDisplayName" placeholder="Ej: Daliz Gómez"
+                               class="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-700">Usuario (@handle)</label>
+                        <input type="text" x-model="regUsername" placeholder="Ej: daliz_tic"
+                               class="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-700">Correo</label>
+                        <input type="email" x-model="regEmail" placeholder="usuario@uni.edu"
+                               class="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-700">Contraseña</label>
+                        <input type="password" x-model="regPassword" placeholder="••••••••"
+                               class="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-700">Universidad / Institución</label>
+                    <input type="text" x-model="regUniversity" placeholder="Ej: Universidad Nacional"
+                           class="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-700">Carrera</label>
+                        <input type="text" x-model="regCareer" placeholder="Ej: Ing. Sistemas"
+                               class="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-700">Semestre</label>
+                        <input type="text" x-model="regSemester" placeholder="Ej: 7mo Semestre"
+                               class="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
+                    </div>
+                </div>
+
+                <button @click="register()" 
+                        class="w-full py-3 bg-[#0083B0] hover:bg-[#007096] text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-[#0083B0]/20">
+                    Registrarme y Empezar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: PERFIL PÚBLICO DE USUARIO (COMUNIDAD) ==================== -->
+    <div x-show="userProfileModalOpen" x-cloak 
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+         @click.self="userProfileModalOpen = false">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 shadow-2xl border border-slate-100 max-h-[88vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Perfil en Kua</span>
+                <button @click="userProfileModalOpen = false" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Profile Header -->
+            <div class="text-center space-y-2">
+                <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-[#0083B0] to-[#00B4DB] text-white flex items-center justify-center text-2xl font-bold mx-auto shadow-md">
+                    <span x-text="(viewedUserProfile?.display_name || 'U')[0].toUpperCase()"></span>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800" x-text="viewedUserProfile?.display_name"></h3>
+                <p class="text-xs font-bold text-[#0083B0]" x-text="`@${viewedUserProfile?.username}`"></p>
+                <p class="text-xs text-slate-500 font-medium" x-text="`${viewedUserProfile?.university || 'Universidad'} • ${viewedUserProfile?.career || ''} (${viewedUserProfile?.semester || ''})`"></p>
+                <p x-show="viewedUserProfile?.bio" class="text-xs text-slate-600 italic bg-slate-50 p-3 rounded-xl" x-text="viewedUserProfile?.bio"></p>
+            </div>
+
+            <!-- Public Decks List -->
+            <div class="space-y-3 pt-2">
+                <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Mazos Públicos Compartidos</h4>
+                <div class="space-y-2">
+                    <template x-for="d in viewedUserProfile?.public_decks || []" :key="d.id">
+                        <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-center justify-between">
+                            <div>
+                                <span class="font-bold text-xs text-slate-800 block" x-text="d.name"></span>
+                                <span class="text-[10px] text-slate-400" x-text="`${d.flashcards_count || 0} cards • Dificultad: ${d.difficulty || 'Medio'}`"></span>
+                            </div>
+                            <button @click="cloneForumDeck({ deck_id: d.id, name: d.name })" 
+                                    class="px-3 py-1.5 bg-[#0083B0] text-white rounded-xl text-xs font-bold hover:bg-[#007096] transition-all">
+                                Clonar
+                            </button>
+                        </div>
+                    </template>
+                    <div x-show="!viewedUserProfile?.public_decks?.length" class="text-xs text-slate-400 text-center py-2">
+                        Este usuario aún no ha compartido mazos públicos.
+                    </div>
+                </div>
+            </div>
+
+            <button @click="userProfileModalOpen = false" class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-all">
+                Cerrar
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: CONFIGURAR GEMINI API KEY ==================== -->
+    <div x-show="oralExamConfigOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" @click.self="oralExamConfigOpen = false">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-md space-y-5 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-[10px] uppercase tracking-wider font-bold text-[#0083B0]">Configuración</p>
+                    <h3 class="text-lg font-bold text-slate-800">Examen Oral</h3>
+                </div>
+                <button @click="oralExamConfigOpen = false" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <p class="text-xs text-slate-500" x-text="oralExamTargetFolder ? `Carpeta: ${oralExamTargetFolder.name}` : `Mazo: ${oralExamTargetDeck?.name || ''}`"></p>
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <label for="oral-question-count" class="text-xs font-bold text-slate-700">Cantidad de preguntas</label>
+                    <span class="text-sm font-bold text-[#0083B0]" x-text="oralQuestionCount"></span>
+                </div>
+                <input id="oral-question-count" type="range" min="3" max="15" step="1" x-model.number="oralQuestionCount" class="w-full accent-[#0083B0]">
+                <div class="flex justify-between text-[10px] text-slate-400"><span>3</span><span>15</span></div>
+            </div>
+            <div class="space-y-1">
+                <label for="oral-difficulty" class="text-xs font-bold text-slate-700">Dificultad</label>
+                <select id="oral-difficulty" x-model="oralDifficulty" class="w-full px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
+                    <option>Fácil</option><option>Medio</option><option>Difícil</option>
+                </select>
+            </div>
+            <div class="flex gap-3 pt-1">
+                <button @click="oralExamConfigOpen = false" class="w-1/2 py-3 bg-slate-100 text-slate-700 font-semibold rounded-xl text-sm">Cancelar</button>
+                <button @click="confirmOralExam()" :disabled="isGeneratingFolderOralExam" class="w-1/2 py-3 bg-[#0083B0] text-white font-bold rounded-xl text-sm disabled:opacity-60" x-text="isGeneratingFolderOralExam ? 'Generando examen…' : 'Comenzar examen'"></button>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="folderModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" @click.self="folderModalOpen = false">
+        <form @submit.prevent="saveFolder()" class="bg-white rounded-3xl p-6 w-full max-w-md space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-slate-800" x-text="folderEditingId ? 'Editar Carpeta' : 'Crear Carpeta'"></h3>
+                <button type="button" @click="folderModalOpen = false" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <label class="block text-xs font-bold text-slate-700" for="folder-name">Nombre de la materia</label>
+            <input id="folder-name" type="text" x-model="folderNameInput" maxlength="80" required placeholder="Ej. Cálculo" class="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
+            <div class="space-y-1">
+                <label class="block text-xs font-bold text-slate-700" for="folder-color">Color de la carpeta</label>
+                <input id="folder-color" type="color" x-model="folderColorInput" class="w-full h-11 p-1 bg-white rounded-xl border border-slate-200 cursor-pointer">
+            </div>
+            <div class="space-y-1">
+                <label class="block text-xs font-bold text-slate-700" for="folder-image">Foto de la carpeta</label>
+                <input id="folder-image" type="file" accept="image/png,image/jpeg,image/webp,image/gif" @change="folderImageFile = $event.target.files[0] || null; folderImageName = folderImageFile?.name || folderImageName" class="w-full text-xs text-slate-600 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-sky-50 file:text-[#0083B0]">
+                <p x-show="folderImageName" class="text-[11px] text-slate-400" x-text="folderImageName"></p>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" @click="folderModalOpen = false" class="w-1/2 py-3 bg-slate-100 text-slate-700 font-semibold rounded-xl text-sm">Cancelar</button>
+                <button type="submit" :disabled="isCreatingFolder" class="w-1/2 py-3 bg-[#0083B0] text-white font-bold rounded-xl text-sm disabled:opacity-60" x-text="isCreatingFolder ? 'Guardando…' : (folderEditingId ? 'Guardar Cambios' : 'Crear Carpeta')"></button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ==================== MODAL: CONFIGURAR GEMINI API KEY ==================== -->
+    <div x-show="apiKeyModalOpen" x-cloak 
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+         @click.self="apiKeyModalOpen = false">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 shadow-2xl border border-slate-100">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-[#0083B0]/10 text-[#0083B0] flex items-center justify-center">
+                        <i data-lucide="key" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800">Gemini API Key</h3>
+                </div>
+                <button @click="apiKeyModalOpen = false" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-500 leading-relaxed">
+                Kua utiliza los modelos oficiales de Google Gemini:
+                <b>gemini-3.5-transcribe</b> para transcripción oral de muletillas, <b>gemini-3.8-flash</b> para evaluación y generación de mazos, y <b>gemini-3.8-flash-tts</b> para voz.
+            </p>
+
+            <div class="space-y-1.5">
+                <label class="text-xs font-bold text-slate-700">Tu Clave de API</label>
+                <input type="password" x-model="apiKeyInput" placeholder="AIzaSy... o AQ.Ab..."
+                       class="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0083B0]">
+                <p x-show="maskedKey" class="text-[11px] text-slate-400 mt-1" x-text="`Clave actual: ${maskedKey}`"></p>
+            </div>
+
+            <div class="flex items-center space-x-3 pt-2">
+                <button @click="apiKeyModalOpen = false" class="w-1/2 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition-all">
+                    Cerrar
+                </button>
+                <button @click="saveApiKey()" class="w-1/2 py-3 bg-[#0083B0] hover:bg-[#007096] text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-[#0083B0]/20">
+                    Guardar Clave
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: DETALLE DE RESPUESTA ORAL ==================== -->
+    <div x-show="selectedAnswerDetail" x-cloak style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click.self="selectedAnswerDetail = null">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-[#0083B0] bg-[#0083B0]/10 px-2.5 py-1 rounded-full" 
+                      x-text="selectedAnswerDetail?.deck_name"></span>
+                <button @click="selectedAnswerDetail = null" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <h3 class="text-lg font-bold text-slate-800" x-text="selectedAnswerDetail?.question_text"></h3>
+
+            <div class="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl text-center text-xs">
+                <div>
+                    <span class="text-slate-400 font-semibold block">Puntaje</span>
+                    <span class="text-xl font-bold text-[#0083B0]" x-text="`${selectedAnswerDetail?.score}/100`"></span>
+                </div>
+                <div>
+                    <span class="text-slate-400 font-semibold block">Claridad</span>
+                    <span class="text-xl font-bold text-emerald-700" x-text="`${selectedAnswerDetail?.clarity_score}/100`"></span>
+                </div>
+            </div>
+
+            <div class="space-y-1">
+                <span class="text-xs font-bold text-slate-500 uppercase">Transcripción:</span>
+                <div class="p-4 bg-slate-50 rounded-2xl text-xs text-slate-700 leading-relaxed" 
+                     x-text="selectedAnswerDetail?.transcript"></div>
+            </div>
+
+            <div class="space-y-1">
+                <span class="text-xs font-bold text-slate-500 uppercase">Retroalimentación del Tutor IA:</span>
+                <p class="text-xs text-slate-600 leading-relaxed bg-[#0083B0]/5 p-4 rounded-2xl border border-[#0083B0]/15"
+                   x-text="selectedAnswerDetail?.feedback"></p>
+            </div>
+
+            <button @click="selectedAnswerDetail = null" class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-all">
+                Cerrar
+            </button>
+        </div>
+    </div>
+
+</body>
+</html>

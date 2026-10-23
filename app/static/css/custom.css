@@ -1,0 +1,163 @@
+/* Kua Custom Styling & Animations - Celeste Marino Theme (#0083B0) */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+    --color-primary: #0083B0;
+    --color-primary-light: #00B4DB;
+    --color-primary-dark: #006080;
+}
+
+body {
+    font-family: 'Outfit', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #F8FBFC;
+    background-image: radial-gradient(#BDD7E0 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-attachment: fixed;
+    color: #0F172A;
+}
+
+/* 3D Card Flip */
+.perspective-1000 {
+    perspective: 1000px;
+}
+
+.transform-style-3d {
+    transform-style: preserve-3d;
+}
+
+.backface-hidden {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+    transform: rotateY(180deg);
+}
+
+.card-flip-container {
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Countdown Animation */
+@keyframes countdown-pop {
+    0% {
+        transform: scale(0.6);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.15);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.countdown-pop-anim {
+    animation: countdown-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Pulsing effect for active microphone recording */
+@keyframes recording-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(0, 131, 176, 0.5);
+    }
+    70% {
+        box-shadow: 0 0 0 20px rgba(0, 131, 176, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 131, 176, 0);
+    }
+}
+
+.recording-pulse-active {
+    animation: recording-pulse 1.8s infinite;
+}
+
+/* Quokka Animations */
+@keyframes quokka-happy {
+    0%, 100% {
+        transform: translateY(0) scale(1) rotate(0deg);
+    }
+    20% {
+        transform: translateY(-16px) scale(1.08) rotate(-4deg);
+    }
+    40% {
+        transform: translateY(-8px) scale(1.05) rotate(4deg);
+    }
+    60% {
+        transform: translateY(-14px) scale(1.08) rotate(-3deg);
+    }
+    80% {
+        transform: translateY(-4px) scale(1.02) rotate(2deg);
+    }
+}
+
+.quokka-eating-anim {
+    animation: quokka-happy 1.2s ease-in-out infinite;
+}
+
+@keyframes float-heart {
+    0% {
+        opacity: 0;
+        transform: translateY(0) scale(0.5);
+    }
+    50% {
+        opacity: 1;
+        transform: translateY(-25px) scale(1.2);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+    }
+}
+
+.floating-heart {
+    animation: float-heart 1.5s ease-out infinite;
+}
+
+/* Heart burst for Instagram like */
+@keyframes heart-burst {
+    0% {
+        transform: scale(1);
+    }
+    40% {
+        transform: scale(1.35);
+    }
+    70% {
+        transform: scale(0.9);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.heart-liked {
+    animation: heart-burst 0.35s ease-in-out;
+}
+
+/* Subtle glassmorphism with Celeste Marino tints */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(226, 238, 244, 0.9);
+}
+
+.glass-nav {
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-top: 1px solid rgba(200, 225, 235, 0.8);
+}
+
+/* Hide scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
