@@ -157,10 +157,10 @@ document.addEventListener('alpine:init', () => {
         selectedAnswerDetail: null,
 
         async init() {
+            await this.checkSystemStatus();
             const authenticated = await this.restoreSession();
             if (authenticated) {
                 this.syncProfileAppearance();
-                await this.checkSystemStatus();
                 await this.loadQuokkaStatus();
                 await this.loadDecks();
                 await this.loadFolders();
@@ -488,9 +488,11 @@ document.addEventListener('alpine:init', () => {
         async checkSystemStatus() {
             try {
                 const res = await fetch('/api/status');
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
-                this.hasApiKey = data.has_gemini_api_key;
+                this.hasApiKey = Boolean(data.has_key ?? data.has_gemini_api_key);
                 this.maskedKey = data.masked_key || '';
+                this.apiKeyModalOpen = !this.hasApiKey;
             } catch (e) {
                 console.error("Status check failed:", e);
             }

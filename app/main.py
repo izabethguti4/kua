@@ -73,10 +73,11 @@ def read_root():
 
 @app.get("/api/status")
 def get_system_status():
-    key = get_api_key()
+    key = (get_api_key() or "").strip()
     masked_key = f"{key[:4]}...{key[-4:]}" if key and len(key) > 8 else ("Configurada" if key else None)
     return {
         "status": "online",
+        "has_key": bool(key),
         "has_gemini_api_key": bool(key),
         "masked_key": masked_key,
         "app_name": "Kua",
