@@ -612,21 +612,33 @@ def create_folder_oral_exam(folder_id: int, payload: OralExamRequest, background
         conn.close()
         raise HTTPException(status_code=400, detail="Agrega al menos un mazo a la carpeta para generar un examen.")
 
-    source_parts = []
-    for deck in decks:
-        cursor.execute("SELECT question_text, concept, key_points_json FROM oral_questions WHERE deck_id = ? ORDER BY id ASC;", (deck["id"],))
-        oral_questions = [dict(row) for row in cursor.fetchall()]
-        source_parts.append(f"MAZO: {deck['name']}\nAPUNTES:\n{deck.get('notes_text') or '(sin apuntes guardados)'}")
-        if oral_questions:
-            formatted_questions = []
-            for question in oral_questions:
-                key_points = json.loads(question["key_points_json"]) if question["key_points_json"] else []
-                formatted_questions.append(
-                    f"- {question['question_text']} | Concepto: {question['concept'] or ''} | Puntos clave: {', '.join(key_points)}"
+    cursor.execute("""
+        SELECT d.name AS deck_name, f.question, f.answer
+        FROM decks d JOIN flashcards f ON f.deck_id = d.id
+        WHERE d.folder_id = ? AND d.user_id = ? AND COALESCE(d.is_exam_only, 0) = 0
+        ORDER BY f.id ASC LIMIT 15;
+    """, (folder_id, user_id))
+    folder_cards = [dict(row) for row in cursor.fetchall()]
+    if folder_cards:
+        source_parts = [f"{card['deck_name']}: {card['question']} — {card['answer']}" for card in folder_cards]
+    else:
+        source_parts = [f"MAZO: {deck['name']}\n{(deck.get('notes_text') or '')[:400]}" for deck in decks[:6] if deck.get("notes_text")]
+        if not source_parts:
+            for deck in decks:
+                cursor.execute(
+                    "SELECT question_text, concept FROM oral_questions WHERE deck_id = ? ORDER BY id ASC LIMIT 15;",
+                    (deck["id"],),
                 )
-            source_parts.append("PREGUNTAS ORALES EXISTENTES:\n" + "\n".join(formatted_questions))
-
-    source_material = "\n\n".join(source_parts)[:3000]
+                source_parts.extend(
+                    f"{row['question_text']} | Concepto: {row['concept'] or ''}"
+                    for row in cursor.fetchall()
+                )
+                if len(source_parts) >= 15:
+                    break
+    source_material = "\n".join(source_parts)[:3000]
+    if not source_material:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Los mazos de esta carpeta no contienen tarjetas ni apuntes para el examen.")
     conn.close()
 
     try:
@@ -681,16 +693,21 @@ def create_deck_oral_exam(deck_id: int, payload: OralExamRequest, background_tas
         raise HTTPException(status_code=404, detail="Mazo no encontrado.")
     cursor.execute("SELECT question_text, concept, key_points_json FROM oral_questions WHERE deck_id = ? ORDER BY id ASC;", (deck_id,))
     existing_questions = [dict(row) for row in cursor.fetchall()]
+    cursor.execute("SELECT question, answer FROM flashcards WHERE deck_id = ? ORDER BY id ASC LIMIT 15;", (deck_id,))
+    flashcards = [dict(row) for row in cursor.fetchall()]
     conn.close()
 
-    source_parts = [f"MAZO: {deck['name']}\nAPUNTES:\n{deck['notes_text'] or '(sin apuntes guardados)'}"]
-    if existing_questions:
-        source_parts.append("PREGUNTAS ORALES DE REFERENCIA:\n" + "\n".join(
-            f"- {q['question_text']} | Concepto: {q['concept'] or ''} | Puntos clave: {', '.join(json.loads(q['key_points_json']) if q['key_points_json'] else [])}"
-            for q in existing_questions
-        ))
+    if flashcards:
+        source_parts = [f"{card['question']} — {card['answer']}" for card in flashcards]
+    elif existing_questions:
+        source_parts = [
+            f"{q['question_text']} | Concepto: {q['concept'] or ''} | Puntos clave: {', '.join(json.loads(q['key_points_json']) if q['key_points_json'] else [])}"
+            for q in existing_questions[:15]
+        ]
+    else:
+        source_parts = [deck['notes_text'] or '']
     source_material = "\n\n".join(source_parts)[:3000]
-    if not deck["notes_text"] and not existing_questions:
+    if not source_material:
         raise HTTPException(status_code=400, detail="Este mazo no contiene material para generar un examen oral.")
 
     try:

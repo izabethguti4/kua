@@ -197,40 +197,24 @@ def generate_oral_exam_questions(
     """Create a difficulty-adjusted oral exam from deck or folder material."""
     api_key = api_key or get_api_key()
     print("GEMINI_API_KEY configurada:", bool(api_key), flush=True)
-    # Keep this synchronous Gemini request below Render's proxy timeout.
-    client = get_gemini_client(api_key, timeout_ms=20_000)
+    # Allow the oral exam request up to 60 seconds, with retries disabled by the client.
+    client = get_gemini_client(api_key, timeout_ms=60_000)
     if not client:
         raise ValueError("GEMINI_API_KEY no está configurada.")
 
-    difficulty_instruction = {
-        "Fácil": "preguntas directas sobre definiciones, reconocimiento y explicación de conceptos básicos",
-        "Medio": "preguntas de comprensión, relaciones entre conceptos y aplicación a ejemplos",
-        "Difícil": "preguntas de análisis profundo, comparación, excepciones y aplicación a situaciones nuevas",
-    }.get(difficulty, "preguntas de comprensión y aplicación estándar")
-
-    prompt = f"""
-Eres un tutor universitario. Crea un examen oral personalizado sobre "{exam_title}" usando el material proporcionado.
-Genera exactamente {question_count} preguntas integradoras de dificultad {difficulty}. {difficulty_instruction}. Procura cubrir los distintos mazos y conceptos sin repetir preguntas.
-Devuelve exclusivamente JSON válido con esta forma:
-{{
-  "oral_questions": [
-    {{"question_text": "Pregunta para responder oralmente", "concept": "Concepto central", "key_points": ["Punto clave 1", "Punto clave 2", "Punto clave 3"]}}
-  ]
-}}
-
-Material de estudio:
-{source_material}
-"""
+    prompt = f"""Genera exactamente {question_count} preguntas orales concisas de dificultad {difficulty} sobre {exam_title}, basándote solo en este texto. No inventes datos ni expliques nada más. Devuelve solo JSON válido con la forma {{"oral_questions":[{{"question_text":"...","concept":"...","key_points":["...","...","..."]}}]}}.
+Texto: {source_material[:3000]}"""
 
     last_error = None
-    for model_name in ["gemini-3.8-flash"]:
+    for model_name in ["gemini-3.5-flash-lite"]:
         try:
             response = client.models.generate_content(
                 model=model_name,
                 contents=prompt,
                 config=types.GenerateContentConfig(
-                    temperature=0.35,
+                    temperature=0.2,
                     response_mime_type="application/json",
+                    max_output_tokens=2048,
                 ),
             )
             data = json.loads(clean_json_text(response.text))
