@@ -299,7 +299,7 @@ def evaluate_oral_answer_with_gemini(
     api_key: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Evaluates student's oral answer against source notes, key points, and difficulty using gemini-3.8-flash.
+    Evaluates the student's oral answer using the lightweight Gemini Flash-Lite model.
     """
     client = get_gemini_client(api_key)
     heuristics = analyze_filler_words_heuristics(transcript)
@@ -366,7 +366,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con este formato:
 """
 
     last_error = None
-    for model_name in GEN_EVAL_MODELS:
+    for model_name in ["gemini-3.5-flash-lite"]:
         try:
             response = client.models.generate_content(
                 model=model_name,

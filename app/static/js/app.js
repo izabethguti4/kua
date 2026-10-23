@@ -1193,7 +1193,7 @@ document.addEventListener('alpine:init', () => {
 
                 setTimeout(() => {
                     if (this.isEvaluating) {
-                        this.evalStepMessage = "2/2 Evaluando contenido y fluidez con gemini-3.8-flash...";
+                        this.evalStepMessage = "2/2 Evaluando contenido y fluidez...";
                     }
                 }, 1100);
 
