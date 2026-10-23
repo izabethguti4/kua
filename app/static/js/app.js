@@ -1052,6 +1052,7 @@ document.addEventListener('alpine:init', () => {
                     body: JSON.stringify({ deck_id: deck.id })
                 });
                 const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || `No se pudo iniciar el examen (HTTP ${res.status}).`);
                 this.oralSessionId = data.session_id;
                 this.oralQuestions = data.questions;
 
