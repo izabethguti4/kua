@@ -631,12 +631,15 @@ def create_folder_oral_exam(folder_id: int, payload: OralExamRequest, background
 
     try:
         initial_count = min(3, payload.question_count)
+        print("Generando examen...", flush=True)
         oral_questions = generate_oral_exam_questions(
             folder["name"], source_material, question_count=initial_count,
             difficulty=payload.difficulty
         )
+        print("Examen generado con éxito", flush=True)
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Gemini no pudo generar el examen combinado: {exc}")
+        print(f"Error generando examen de carpeta {folder_id}: {exc}", flush=True)
+        raise HTTPException(status_code=500, detail="Error generando preguntas. Verifica GEMINI_API_KEY e inténtalo de nuevo.") from exc
 
     conn = get_db()
     cursor = conn.cursor()
@@ -692,13 +695,16 @@ def create_deck_oral_exam(deck_id: int, payload: OralExamRequest, background_tas
 
     try:
         initial_count = min(3, payload.question_count)
+        print("Generando examen...", flush=True)
         oral_questions = generate_oral_exam_questions(
             deck["name"], source_material,
             question_count=initial_count,
             difficulty=payload.difficulty,
         )
+        print("Examen generado con éxito", flush=True)
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Gemini no pudo generar el examen oral: {exc}")
+        print(f"Error generando examen del mazo {deck_id}: {exc}", flush=True)
+        raise HTTPException(status_code=500, detail="Error generando preguntas. Verifica GEMINI_API_KEY e inténtalo de nuevo.") from exc
 
     exam_name = f"Examen Oral: {deck['name']}"
     conn = get_db()
@@ -742,6 +748,7 @@ def _generate_remaining_oral_questions(
     existing_questions: list, question_count: int, difficulty: str
 ) -> None:
     try:
+        print("Generando examen...", flush=True)
         material_with_references = (
             source_material[:3000]
             + "\n\nPREGUNTAS YA GENERADAS (evita repetirlas):\n"
@@ -751,6 +758,7 @@ def _generate_remaining_oral_questions(
             exam_title, material_with_references,
             question_count=question_count, difficulty=difficulty
         )
+        print("Examen generado con éxito", flush=True)
         conn = get_db()
         cursor = conn.cursor()
         _insert_oral_questions(cursor, exam_deck_id, remaining)
@@ -758,6 +766,7 @@ def _generate_remaining_oral_questions(
         conn.close()
         oral_exam_jobs[job_id].update({"status": "complete", "questions": remaining})
     except Exception as exc:
+        print(f"Error generando preguntas restantes del examen {exam_deck_id}: {exc}", flush=True)
         oral_exam_jobs[job_id].update({"status": "failed", "error": str(exc)})
 
 

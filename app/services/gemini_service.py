@@ -3,11 +3,6 @@ import re
 import json
 import base64
 from typing import Dict, Any, List, Optional
-from dotenv import load_dotenv
-
-# Load .env variables
-load_dotenv()
-
 # Google GenAI imports
 from google import genai
 from google.genai import types
@@ -23,15 +18,20 @@ SPANISH_FILLER_WORDS = [
 ]
 
 def get_api_key() -> Optional[str]:
-    load_dotenv()
     return os.environ.get("GEMINI_API_KEY")
 
-def get_gemini_client(api_key: Optional[str] = None) -> Optional[genai.Client]:
+def get_gemini_client(api_key: Optional[str] = None, timeout_ms: Optional[int] = None) -> Optional[genai.Client]:
     key = api_key or get_api_key()
     if not key:
         return None
     try:
-        return genai.Client(api_key=key)
+        client_options = {}
+        if timeout_ms is not None:
+            client_options["http_options"] = types.HttpOptions(
+                timeout=timeout_ms,
+                retry_options=types.HttpRetryOptions(attempts=1),
+            )
+        return genai.Client(api_key=key, **client_options)
     except Exception as e:
         print(f"Error initializing Gemini Client: {e}")
         return None
@@ -195,7 +195,8 @@ def generate_oral_exam_questions(
     api_key: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """Create a difficulty-adjusted oral exam from deck or folder material."""
-    client = get_gemini_client(api_key)
+    # Keep this synchronous Gemini request below Render's proxy timeout.
+    client = get_gemini_client(api_key, timeout_ms=20_000)
     if not client:
         raise ValueError("GEMINI_API_KEY no está configurada.")
 
